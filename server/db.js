@@ -86,11 +86,23 @@ CREATE TABLE IF NOT EXISTS conversions (
 );
 CREATE INDEX IF NOT EXISTS conversions_status ON conversions(status);
 
+-- Manual matches, remembered by PlayStation title ID (CUSA…/PPSA…).
+CREATE TABLE IF NOT EXISTS title_matches (
+  title_id TEXT PRIMARY KEY,
+  igdb_id INTEGER NOT NULL,
+  updated_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT
 );
 `);
+
+// Matches you made by hand before this table existed.
+db.exec(`INSERT OR IGNORE INTO title_matches (title_id, igdb_id, updated_at)
+  SELECT title_id, igdb_id, datetime('now') FROM games
+  WHERE match_status = 'manual' AND title_id IS NOT NULL AND igdb_id IS NOT NULL`);
 
 export function getSetting(key, fallback = '') {
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);

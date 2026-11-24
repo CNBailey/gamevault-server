@@ -158,49 +158,6 @@ export async function searchIgdb(title, platform) {
   return [...byId.values()].sort((a, b) => b.score - a.score);
 }
 
-/**
- * Exact match by PlayStation title ID (CUSA12345 / PPSA12345): IGDB's links to the
- * PlayStation Store usually carry the product ID, which contains the title ID.
- * Returns null when IGDB has no such link, or the ID points at several games.
- */
-export async function findByTitleId(titleId, localTitle) {
-  const tid = String(titleId || '').toUpperCase();
-  if (!/^(CUSA|PPSA)\d{5}$/.test(tid)) return null;
-  let rows;
-  try {
-    rows = await igdb('external_games', `fields game,uid,url; where uid ~ *"${tid}"* | url ~ *"${tid}"*; limit 20;`);
-  } catch (err) {
-    console.warn(`[scrape] title ID lookup for ${tid} failed: ${err.message}`);
-    return null;
-  }
-  const ids = [...new Set(rows.map((r) => (r.game && typeof r.game === 'object' ? r.game.id : r.game)).filter(Boolean))];
-  if (!ids.length) return null;
-  const games = await igdb('games', `fields ${FIELDS}; where id = (${ids.slice(0, 10).join(',')}); limit 10;`);
-  if (games.length === 1) return games[0];
-  // Several games share the ID (e.g. a bundle): keep the one whose name fits best.
-  const ranked = games.map((g) => ({ g, s: Math.max(...searchVariants(localTitle).map((v) => similarity(v, g.name))) })).sort((a, b) => b.s - a.s);
-  return ranked[0] && ranked[0].s >= 0.5 ? ranked[0].g : null;
-}
-
-/**
- * Diagnostics: shows IGDB's raw answers for a title ID and for one matched game's store
- * links, so the title-ID lookup can be checked against real data.
- */
-export async function titleIdDiagnostics(titleId, igdbId) {
-  const out = { titleId, igdbId };
-  const run = async (key, endpoint, q) => {
-    try { out[key] = { query: q, result: await igdb(endpoint, q) }; } catch (err) { out[key] = { query: q, error: err.message }; }
-  };
-  const tid = String(titleId || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if (tid) {
-    await run('lookupUsedByGameVault', 'external_games', `fields game,uid,url; where uid ~ *"${tid}"* | url ~ *"${tid}"*; limit 20;`);
-    await run('uidOnly', 'external_games', `fields game,uid,url; where uid ~ *"${tid}"*; limit 20;`);
-    await run('urlOnly', 'external_games', `fields game,uid,url; where url ~ *"${tid}"*; limit 20;`);
-  }
-  if (igdbId) await run('storeLinksForMatchedGame', 'external_games', `fields *; where game = ${Number(igdbId)}; limit 50;`);
-  return out;
-}
-
 export async function getIgdbGame(igdbId) {
   const rows = await igdb('games', `fields ${FIELDS}; where id = ${Number(igdbId)};`);
   return rows[0] || null;
@@ -261,10 +218,14 @@ export async function scrapeGame(gameId) {
   if (!row) return;
   const title = row.local_title || row.path.split(/[\\/]/).pop();
   try {
-    const exact = await findByTitleId(row.title_id, title);
-    if (exact) {
-      await applyIgdb(gameId, exact, 'matched_id', 1);
-      return;
+    // A game you matched by hand before (same title ID) is matched the same way again.
+    const remembered = row.title_id && db.prepare('SELECT igdb_id FROM title_matches WHERE title_id = ?').get(row.title_id);
+    if (remembered) {
+      const g = await getIgdbGame(remembered.igdb_id);
+      if (g) {
+        await applyIgdb(gameId, g, 'manual', 1);
+        return;
+      }
     }
     const results = await searchIgdb(title, row.platform);
     const best = results[0];
@@ -285,6 +246,16 @@ export async function matchGame(gameId, igdbId) {
   const g = await getIgdbGame(igdbId);
   if (!g) throw new Error('IGDB game not found');
   await applyIgdb(gameId, g, 'manual', 1);
+  rememberMatch(gameId);
+}
+
+/** Remembers a game's manual match by its title ID, for re-dumps, new versions and conversions. */
+function rememberMatch(gameId) {
+  const row = db.prepare('SELECT title_id, igdb_id FROM games WHERE id = ?').get(gameId);
+  if (!row?.title_id || !row.igdb_id) return;
+  db.prepare(`INSERT INTO title_matches (title_id, igdb_id, updated_at) VALUES (?, ?, ?)
+    ON CONFLICT(title_id) DO UPDATE SET igdb_id = excluded.igdb_id, updated_at = excluded.updated_at`)
+    .run(row.title_id, row.igdb_id, new Date().toISOString());
 }
 
 export async function scrapePending({ all = false } = {}) {
