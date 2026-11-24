@@ -66,6 +66,12 @@ export default function Settings({ scan }) {
                     : `Last scan ${timeAgo(lastScan)}${s?.added ? ` · ${s.added} new` : ''}. Automatic scan every ${settings?.scanIntervalHours || 0} h.`}
                 </p>
                 {s?.error && <p className="error small">{s.error}</p>}
+                {!s?.running && s?.orphanPatches?.length > 0 && (
+                  <details className="small muted">
+                    <summary>{s.orphanPatches.length} PS4 patch(es) with no matching game</summary>
+                    <ul>{s.orphanPatches.map((p) => <li key={p} className="mono">{p}</li>)}</ul>
+                  </details>
+                )}
               </div>
               <div className="row gap-8 wrap">
                 <button className="btn btn-primary" disabled={s?.running} onClick={() => scan.start()}>Scan now</button>
@@ -168,6 +174,11 @@ export default function Settings({ scan }) {
               <button className="btn btn-primary">Save</button>
               {msg.settings && <p className="small" role="status">{msg.settings}</p>}
             </form>
+          </section>
+
+          <section className="card" aria-labelledby="h-badges">
+            <h2 id="h-badges">Platform badges</h2>
+            <p className="muted small">To show your own images instead of the text badges, put files named <code>ps5.svg</code> and <code>ps4.svg</code> (or .png / .webp) in the <code>badges</code> folder inside GameVault&apos;s data folder (on the NAS: <code>docker/gamevault/badges</code>), then reload the page.</p>
           </section>
 
           <section className="card" aria-labelledby="h-api">

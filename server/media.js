@@ -3,6 +3,8 @@ import path from 'node:path';
 import { config } from './config.js';
 
 export const mediaRoot = path.join(config.dataDir, 'media');
+/** Put ps5.svg / ps4.png (etc.) here to replace the text platform badges. */
+export const badgesDir = path.join(config.dataDir, 'badges');
 
 function gameDir(gameId) {
   return path.join(mediaRoot, String(gameId));

@@ -17,7 +17,8 @@ export const scanState = {
   added: 0,
   startedAt: null,
   finishedAt: null,
-  error: null
+  error: null,
+  orphanPatches: []
 };
 
 const nowIso = () => new Date().toISOString();
@@ -105,7 +106,7 @@ async function inspect(candidate, libraryPlatform) {
       sizeBytes: st.size,
       fileCount: 1,
       modifiedAt: st.mtime.toISOString(),
-      pkgs: [{ path: name, size: st.size, category: 'image', version: meta.version }]
+      pkgs: [{ path: name, file: candidate.path, size: st.size, category: 'image', version: meta.version }]
     };
   }
   if (candidate.type === 'folder') {
@@ -153,6 +154,7 @@ async function inspect(candidate, libraryPlatform) {
     modifiedAt: pkgs.length ? new Date(Math.max(...pkgs.map((p) => p.mtimeMs))).toISOString() : null,
     pkgs: pkgs.map((p) => ({
       path: candidate.type === 'pkgfile' ? path.basename(p.file) : path.relative(root, p.file).split(path.sep).join('/'),
+      file: p.file,
       size: p.size,
       category: p.category || null,
       version: p.version || null,
@@ -191,23 +193,81 @@ async function upsert(lib, candidatePath, info) {
   return id;
 }
 
+const stem = (p) => path.basename(p).replace(/\.(pkg|exfat)$/i, '').trim();
+const norm = (s) => String(s || '').toLowerCase().replace(/[™®©]/g, '').replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '');
+
+/** PS4 updates: a name ending in "patch", or PKGs that are all updates (category "gp"). */
+export function isPatch(candidatePath, info) {
+  if (info.kind !== 'ps4-pkg') return false;
+  if (/patch$/i.test(stem(candidatePath))) return true;
+  return info.pkgs.length > 0 && info.pkgs.every((p) => p.category === 'gp');
+}
+
+function matchKeys(candidatePath, info) {
+  return new Set([norm(cleanName(path.basename(candidatePath))), norm(cleanName(info.title || ''))].filter(Boolean));
+}
+
+/** Attaches a patch's PKGs to its game: same title ID, else the same cleaned-up name. */
+function attachPatch(patch, games) {
+  const keys = matchKeys(patch.path, patch.info);
+  const target = (patch.info.titleId && games.find((g) => g.info.titleId === patch.info.titleId)) ||
+    games.find((g) => [...matchKeys(g.path, g.info)].some((k) => keys.has(k)));
+  if (!target) return false;
+  const info = target.info;
+  const taken = new Set(info.pkgs.map((p) => p.path));
+  for (const p of patch.info.pkgs) {
+    let name = path.basename(p.file);
+    if (taken.has(name)) name = `updates/${name}`;
+    taken.add(name);
+    info.pkgs.push({ ...p, path: name, category: p.category === 'ac' ? 'ac' : 'gp' });
+  }
+  info.sizeBytes += patch.info.sizeBytes;
+  info.fileCount += patch.info.fileCount;
+  if (patch.info.modifiedAt && (!info.modifiedAt || patch.info.modifiedAt > info.modifiedAt)) info.modifiedAt = patch.info.modifiedAt;
+  const latest = info.pkgs.filter((p) => p.category === 'gp').map((p) => p.version).filter(Boolean).sort().pop();
+  if (latest) info.version = latest;
+  return true;
+}
+
 export async function scanLibrary(lib) {
   scanState.library = lib.path;
   if (!(await isDir(lib.path))) throw new Error(`Library folder not found: ${lib.path}`);
   const candidates = await findCandidates(lib.path);
   scanState.total += candidates.length;
-  const seen = new Set();
+
+  const inspected = [];
   for (const c of candidates) {
     scanState.current = path.relative(lib.path, c.path) || path.basename(c.path);
     try {
       const info = await inspect(c, lib.platform);
       if (lib.platform === 'PS4' || lib.platform === 'PS5') info.platform = lib.platform;
-      await upsert(lib, c.path, info);
-      seen.add(c.path);
+      inspected.push({ path: c.path, info });
     } catch (err) {
       console.warn(`[scan] skipped ${c.path}: ${err.message}`);
     }
     scanState.done++;
+  }
+
+  const games = inspected.filter((x) => !isPatch(x.path, x.info));
+  const patches = inspected.filter((x) => isPatch(x.path, x.info));
+  for (const p of patches) {
+    if (!attachPatch(p, games)) scanState.orphanPatches.push(path.relative(lib.path, p.path));
+    // Patches scanned as games by an earlier version are removed from the list.
+    const old = findByPath.get(p.path);
+    if (old) {
+      await removeGameMedia(old.id);
+      db.prepare('DELETE FROM games WHERE id = ?').run(old.id);
+    }
+  }
+
+  const seen = new Set();
+  for (const g of games) {
+    try {
+      await upsert(lib, g.path, g.info);
+      seen.add(g.path);
+    } catch (err) {
+      console.warn(`[scan] could not save ${g.path}: ${err.message}`);
+    }
   }
   // Games that disappeared from disk are flagged, not deleted, so favourites survive a NAS hiccup.
   const rows = db.prepare('SELECT id, path FROM games WHERE library_id = ?').all(lib.id);

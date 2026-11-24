@@ -4,23 +4,23 @@ import Poster from '../components/Poster.jsx';
 import { PlatformBadge, StarIcon } from '../components/Icons.jsx';
 
 const SORTS = [
-  ['added', 'Recently added'],
   ['title', 'Title A–Z'],
-  ['year', 'Release year'],
+  ['added', 'Date added'],
+  ['released', 'Release date'],
   ['rating', 'Rating'],
   ['size', 'File size']
 ];
 
 export default function Library({ search, scanVersion }) {
-  const saved = store('filters') || {};
+  const saved = store('filters.v2') || {};
   const [games, setGames] = useState(null);
   const [error, setError] = useState('');
   const [platform, setPlatform] = useState(saved.platform || 'All');
   const [genre, setGenre] = useState(saved.genre || 'All');
   const [favOnly, setFavOnly] = useState(!!saved.favOnly);
-  const [sort, setSort] = useState(saved.sort || 'added');
+  const [sort, setSort] = useState(saved.sort || 'title');
 
-  useEffect(() => { store('filters', { platform, genre, favOnly, sort }); }, [platform, genre, favOnly, sort]);
+  useEffect(() => { store('filters.v2', { platform, genre, favOnly, sort }); }, [platform, genre, favOnly, sort]);
 
   useEffect(() => {
     api.games({ sort }).then((d) => { setGames(d.games); setError(''); }).catch((e) => setError(e.message));

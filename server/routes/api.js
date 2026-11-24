@@ -4,6 +4,7 @@ import path from 'node:path';
 import { config } from '../config.js';
 import { db, getSetting, rowToGame, setSetting } from '../db.js';
 import { resolveInside, walkFiles } from '../files.js';
+import { badgesDir } from '../media.js';
 import { runScan, scheduleScans } from '../jobs.js';
 import { purgeMissing, scanState } from '../scanner.js';
 import { candidateSummary, matchGame, resetToken, scrapeGame, scraperConfigured, searchIgdb } from '../scraper.js';
@@ -11,6 +12,7 @@ import { candidateSummary, matchGame, resetToken, scrapeGame, scraperConfigured,
 const SORTS = {
   added: (a, b) => (b.addedAt || '').localeCompare(a.addedAt || ''),
   title: (a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }),
+  released: (a, b) => (b.releaseDate || '').localeCompare(a.releaseDate || '') || SORTS.title(a, b),
   year: (a, b) => (b.year || 0) - (a.year || 0),
   rating: (a, b) => (b.criticScore ?? b.userScore ?? -1) - (a.criticScore ?? a.userScore ?? -1),
   size: (a, b) => (b.sizeBytes || 0) - (a.sizeBytes || 0)
@@ -72,9 +74,18 @@ export default async function api(app) {
     games: db.prepare('SELECT COUNT(*) AS n FROM games WHERE missing = 0').get().n
   }));
 
+  app.get('/badges', async () => {
+    const out = {};
+    for (const p of ['PS5', 'PS4']) {
+      const file = ['svg', 'png', 'webp'].map((ext) => `${p.toLowerCase()}.${ext}`).find((f) => fs.existsSync(path.join(badgesDir, f)));
+      out[p] = file ? `/badges/${file}?v=${Math.round(fs.statSync(path.join(badgesDir, file)).mtimeMs)}` : null;
+    }
+    return out;
+  });
+
   // ---- Games ---------------------------------------------------------------
   app.get('/games', async (req) => {
-    const { platform, genre, q, fav, sort = 'added', status, includeMissing } = req.query;
+    const { platform, genre, q, fav, sort = 'title', status, includeMissing } = req.query;
     let games = db.prepare('SELECT * FROM games').all().map((r) => rowToGame(r));
     if (!includeMissing) games = games.filter((g) => !g.missing);
     if (platform && platform !== 'All') games = games.filter((g) => g.platform === platform.toUpperCase());
@@ -85,7 +96,7 @@ export default async function api(app) {
       const needle = q.toLowerCase();
       games = games.filter((g) => g.title.toLowerCase().includes(needle));
     }
-    games.sort(SORTS[sort] || SORTS.added);
+    games.sort(SORTS[sort] || SORTS.title);
     return { total: games.length, games };
   });
 
@@ -157,12 +168,16 @@ export default async function api(app) {
     const row = getRow(req.params.id);
     if (!row) return notFound(reply);
     const root = gameRoot(row);
-    const file = await resolveInside(root, req.params['*']);
-    if (!file) return notFound(reply, 'File');
+    let file;
     if (row.kind === 'ps4-pkg' || row.kind === 'ps5-exfat') {
-      const allowed = new Set(JSON.parse(row.pkgs || '[]').map((p) => path.resolve(root, p.path)));
-      if (!allowed.has(file)) return notFound(reply, 'File');
+      // Only the files recorded for this game can be downloaded.
+      const entry = JSON.parse(row.pkgs || '[]').find((p) => p.path === req.params['*']);
+      file = entry ? (entry.file || path.resolve(root, entry.path)) : null;
+      if (file && !fs.existsSync(file)) file = null;
+    } else {
+      file = await resolveInside(root, req.params['*']);
     }
+    if (!file) return notFound(reply, 'File');
     return sendFileWithRange(req, reply, file);
   });
 

@@ -105,6 +105,7 @@ export function rowToGame(row, { full = false } = {}) {
     titleId: row.title_id,
     contentId: row.content_id,
     version: row.version,
+    releaseDate: row.release_date,
     matchStatus: row.match_status,
     missing: !!row.missing
   };

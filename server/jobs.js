@@ -15,7 +15,7 @@ export function runScan({ libraryId = null, rescrapeAll = false } = {}) {
   if (scanState.running) return false;
   Object.assign(scanState, {
     running: true, phase: 'scanning', library: null, current: null, done: 0, total: 0, added: 0,
-    startedAt: new Date().toISOString(), finishedAt: null, error: null
+    startedAt: new Date().toISOString(), finishedAt: null, error: null, orphanPatches: []
   });
   (async () => {
     try {

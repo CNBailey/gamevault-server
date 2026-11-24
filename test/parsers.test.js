@@ -79,3 +79,13 @@ test('falls back to the file name when the image cannot be read', async () => {
   assert.equal(meta.title, 'F.I.S.T. Forged In Shadow Torch');
   assert.equal(meta.version, '01.201.001');
 });
+
+test('recognises PS4 patches', async () => {
+  const { isPatch } = await import('../server/scanner.js');
+  const pkg = (category) => ({ kind: 'ps4-pkg', pkgs: [{ category }] });
+  assert.equal(isPatch('/g/Hades patch.pkg', pkg('gd')), true);
+  assert.equal(isPatch('/g/Hades PATCH', pkg('gd')), true);
+  assert.equal(isPatch('/g/Hades v1.10.pkg', pkg('gp')), true);
+  assert.equal(isPatch('/g/Hades.pkg', pkg('gd')), false);
+  assert.equal(isPatch('/g/Dispatch.exfat', { kind: 'ps5-exfat', pkgs: [] }), false);
+});

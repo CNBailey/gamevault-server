@@ -109,6 +109,10 @@ if (process.argv[1] && import.meta.url === new URL(`file://${path.resolve(proces
   write(path.join(out, 'PS4', 'Bloodborne', 'Bloodborne_CUSA00001.pkg'), buildPkg({ title: 'Bloodborne™', titleId: 'CUSA00001' }));
   write(path.join(out, 'PS4', 'Bloodborne', 'updates', 'Bloodborne_v1.09.pkg'), buildPkg({ title: 'Bloodborne™', titleId: 'CUSA00001', version: '01.09', category: 'gp', padMb: 1 }));
   write(path.join(out, 'PS4', 'Hades [CUSA00002].pkg'), buildPkg({ title: 'Hades', titleId: 'CUSA00002' }));
+  // Loose patches next to their games, matched by title ID or by name ("... patch").
+  write(path.join(out, 'PS4', 'Hades [CUSA00002] patch.pkg'), buildPkg({ title: 'Hades', titleId: 'CUSA00002', version: '01.10', category: 'gp', padMb: 1 }));
+  write(path.join(out, 'PS4', 'Ghost of Tsushima Patch', 'GoT_v2.pkg'), buildPkg({ title: 'Ghost of Tsushima', titleId: 'CUSA99999', version: '02.00', category: 'gd', padMb: 1 }));
+  write(path.join(out, 'PS4', 'Some Other Game patch.pkg'), buildPkg({ title: 'Some Other Game', titleId: 'CUSA77777', version: '01.01', category: 'gp', padMb: 0 }));
   write(path.join(out, 'PS4', 'Action', 'Ghost of Tsushima', 'GoT.pkg'), buildPkg({ title: 'Ghost of Tsushima', titleId: 'CUSA00003' }));
   console.log(`Fixtures written to ${out}`);
 }

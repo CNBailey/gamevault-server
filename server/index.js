@@ -5,12 +5,13 @@ import fastifyStatic from '@fastify/static';
 import { config } from './config.js';
 import { db } from './db.js';
 import { runScan, scheduleScans, syncEnvLibraries } from './jobs.js';
-import { mediaRoot } from './media.js';
+import { badgesDir, mediaRoot } from './media.js';
 import api from './routes/api.js';
 
 const app = Fastify({ logger: { level: process.env.GV_LOG_LEVEL || 'info' } });
 
 fs.mkdirSync(mediaRoot, { recursive: true });
+fs.mkdirSync(badgesDir, { recursive: true });
 
 // Lets the future PS5 app (and other tools on your network) call the API.
 app.addHook('onRequest', async (req, reply) => {
@@ -30,13 +31,20 @@ await app.register(fastifyStatic, {
   maxAge: '30d'
 });
 
+await app.register(fastifyStatic, {
+  root: badgesDir,
+  prefix: '/badges/',
+  decorateReply: false,
+  maxAge: '1d'
+});
+
 const hasWeb = fs.existsSync(path.join(config.webDir, 'index.html'));
 if (hasWeb) {
   await app.register(fastifyStatic, { root: config.webDir, prefix: '/', wildcard: false });
 }
 
 app.setNotFoundHandler((req, reply) => {
-  if (req.url.startsWith('/api/') || req.url.startsWith('/media/') || !hasWeb) {
+  if (req.url.startsWith('/api/') || req.url.startsWith('/media/') || req.url.startsWith('/badges/') || !hasWeb) {
     return reply.code(404).send({ error: 'Not found' });
   }
   return reply.sendFile('index.html', config.webDir);

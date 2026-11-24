@@ -38,6 +38,8 @@ Each library folder is searched up to 4 levels deep. A game is:
 | `Some Game/*.pkg` (any `.pkg` up to 2 levels inside) | PS4 PKG game; the base game, updates and DLC are grouped together |
 | `Some Game.pkg` loose in the library folder | PS4 PKG game |
 
+PS4 patches (a `.pkg` or folder whose name ends in `patch`, or PKGs that are all updates) are attached to their game by title ID or name: they are listed on the game's details page and offered for download with it, but don't appear as games. Patches with no matching game are listed under **Settings → Scanning**.
+
 Synology's `@eaDir` and `#recycle` folders are ignored. If a game disappears from disk it is flagged rather than deleted, so its favourite survives; **Settings → Needs review** lets you clean these up.
 
 Matching uses the title inside the dump, falling back to the folder name. Uncertain matches appear under **Needs review**. **Fix match** on any game lets you search IGDB yourself.
@@ -49,7 +51,7 @@ Base URL: `http://<nas-ip>:8686/api/v1`. All responses are JSON unless noted.
 | Method & path | What it does |
 |---|---|
 | `GET /health` | Version and game count |
-| `GET /games?platform=PS5&genre=RPG&q=astro&fav=1&sort=added\|title\|year\|rating\|size` | List games |
+| `GET /games?platform=PS5&genre=RPG&q=astro&fav=1&sort=title\|added\|released\|rating\|size` | List games (default: title) |
 | `GET /games/{id}` | Full details |
 | `PUT /games/{id}/favourite` `{"favourite": true}` | Set favourite (no body = toggle) |
 | `GET /games/{id}/files` | Files making up the game, with sizes and download URLs |
@@ -65,6 +67,10 @@ Base URL: `http://<nas-ip>:8686/api/v1`. All responses are JSON unless noted.
 `titleId`, `contentId` and `version` are returned for every game so a console client can tell whether a game is already installed, or older than the copy on the NAS.
 
 > The API has no login. Keep the port on your home network; don't forward it to the internet.
+
+## Platform badges
+
+To replace the text PS5/PS4 badges with images of your own, put `ps5.svg` and `ps4.svg` (or `.png` / `.webp`) in `/data/badges` (on a Synology with the compose file above: `docker/gamevault/badges`) and reload the page.
 
 ## Configuration
 

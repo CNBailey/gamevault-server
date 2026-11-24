@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 const STAR = 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z';
 
 export function StarIcon({ filled, size = 20, stroke = filled ? '#F5B841' : '#E8ECF1' }) {
@@ -40,6 +42,17 @@ export function PlayIcon({ size = 16, color = 'currentColor' }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true"><path d="M7 4l13 8-13 8z" /></svg>;
 }
 
+let badgeRequest = null;
+function loadBadges() {
+  if (!badgeRequest) badgeRequest = fetch('/api/v1/badges').then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+  return badgeRequest;
+}
+
+/** Platform badge: your own image from /data/badges when present, else a text badge. */
 export function PlatformBadge({ platform, large }) {
+  const [images, setImages] = useState(null);
+  useEffect(() => { let on = true; loadBadges().then((b) => on && setImages(b)); return () => { on = false; }; }, []);
+  const src = images?.[platform];
+  if (src) return <img className={`badge-img${large ? ' badge-img-lg' : ''}`} src={src} alt={platform} />;
   return <span className={`badge badge-${(platform || '').toLowerCase()}${large ? ' badge-lg' : ''}`}>{platform}</span>;
 }
