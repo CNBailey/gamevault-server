@@ -1,0 +1,21 @@
+# GameVault on a Synology (Container Manager → Project → Create → paste this file).
+# Works the same on any Linux host with Docker: change the left-hand paths.
+services:
+  gamevault:
+    image: ghcr.io/cnbailey/gamevault-server:latest
+    container_name: gamevault
+    restart: unless-stopped
+    ports:
+      - "8686:8686"                       # open http://<nas-ip>:8686
+    environment:
+      TZ: Europe/London
+      # Folders as seen inside the container (right-hand side of the volumes below) and their type.
+      GV_LIBRARIES: /games/ps5=PS5,/games/ps4=PS4
+      GV_SCAN_INTERVAL_HOURS: "6"
+      # Optional: IGDB credentials can also be entered on the Settings page.
+      # IGDB_CLIENT_ID: ""
+      # IGDB_CLIENT_SECRET: ""
+    volumes:
+      - /volume1/docker/gamevault:/data             # database + cached artwork (create this folder first)
+      - /volume1/Games/PS5:/games/ps5:ro            # \\synology\Games\PS5 — read-only
+      - /volume1/Games/PS4:/games/ps4:ro            # \\synology\Games\PS4 — read-only
