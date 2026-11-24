@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { parseSfo } from './sfo.js';
+import { parseSfo, firmwareFromPs5, firmwareFromPs4 } from './sfo.js';
 
 async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
@@ -15,7 +15,8 @@ function fromParamJson(json) {
     contentId: json.contentId || null,
     version: json.contentVersion || json.masterVersion || null,
     category: json.applicationCategoryType != null ? String(json.applicationCategoryType) : null,
-    title: localized.titleName || null
+    title: localized.titleName || null,
+    requiredFw: firmwareFromPs5(json.requiredSystemSoftwareVersion)
   };
 }
 
@@ -54,6 +55,7 @@ export async function readPs5Exfat(file, readImage) {
     version: pick('version'),
     category: image.category || null,
     title: pick('title'),
+    requiredFw: image.requiredFw || null,
     iconBuf: icon,
     backdropBuf: backdrop
   };
@@ -75,6 +77,7 @@ export async function readPs5Folder(dir) {
     version: json.contentVersion || json.masterVersion || null,
     category: json.applicationCategoryType != null ? String(json.applicationCategoryType) : null,
     title: localized.titleName || null,
+    requiredFw: firmwareFromPs5(json.requiredSystemSoftwareVersion),
     icon: (await exists(path.join(dir, 'sce_sys', 'icon0.png'))) ? path.join(dir, 'sce_sys', 'icon0.png') : null,
     backdrop: (await exists(path.join(dir, 'sce_sys', 'pic0.png'))) ? path.join(dir, 'sce_sys', 'pic0.png') : null
   };
@@ -95,6 +98,7 @@ export async function readPs4Folder(dir) {
     version: sfo.APP_VER || sfo.VERSION || null,
     category: sfo.CATEGORY || null,
     title: sfo.TITLE || null,
+    requiredFw: firmwareFromPs4(sfo.SYSTEM_VER),
     icon: (await exists(icon)) ? icon : null,
     backdrop: (await exists(pic)) ? pic : null
   };

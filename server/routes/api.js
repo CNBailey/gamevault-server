@@ -31,7 +31,7 @@ function getRow(id) {
 async function gameFiles(row) {
   if (row.kind === 'ps4-pkg' || row.kind === 'ps5-exfat') {
     const pkgs = JSON.parse(row.pkgs || '[]');
-    return pkgs.map((p) => ({ path: p.path, size: p.size, category: p.category, version: p.version }));
+    return pkgs.map((p) => ({ path: p.path, size: p.size, category: p.category, version: p.version, requiredFirmware: p.requiredFw || null }));
   }
   return (await walkFiles(row.path)).map(({ path: p, size }) => ({ path: p, size }));
 }

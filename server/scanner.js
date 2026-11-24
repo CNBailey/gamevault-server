@@ -4,6 +4,7 @@ import { db } from './db.js';
 import { readPkg } from './parsers/pkg.js';
 import { readPs4Folder, readPs5Exfat, readPs5Folder } from './parsers/ps5.js';
 import { readExfatGame } from './parsers/exfat.js';
+import { compareFirmware } from './parsers/sfo.js';
 import { isIgnored, walkFiles } from './files.js';
 import { copyInto, saveBuffer, removeGameMedia } from './media.js';
 
@@ -147,6 +148,7 @@ async function inspect(candidate, libraryPlatform) {
     version: pkgs.filter((p) => p.category === 'gp').map((p) => p.version).sort().pop() || base.version || null,
     category: base.category || null,
     title: base.title || cleanName(path.basename(root)),
+    requiredFw: pkgs.map((p) => p.requiredFw).filter(Boolean).sort(compareFirmware).pop() || null,
     iconBuf: images.icon0 || null,
     backdropBuf: images.pic1 || null,
     sizeBytes: pkgs.reduce((n, p) => n + p.size, 0),
@@ -158,7 +160,8 @@ async function inspect(candidate, libraryPlatform) {
       size: p.size,
       category: p.category || null,
       version: p.version || null,
-      contentId: p.contentId || null
+      contentId: p.contentId || null,
+      requiredFw: p.requiredFw || null
     }))
   };
 }
@@ -170,6 +173,7 @@ const insertGame = db.prepare(`INSERT INTO games
 const updateGame = db.prepare(`UPDATE games SET
   library_id = ?, kind = ?, platform = ?, title_id = ?, content_id = ?, version = ?, category = ?, local_title = ?, pkgs = ?,
   size_bytes = ?, file_count = ?, modified_at = ?, missing = 0 WHERE id = ?`);
+const setFirmware = db.prepare('UPDATE games SET required_fw = ? WHERE id = ?');
 
 async function upsert(lib, candidatePath, info) {
   const existing = findByPath.get(candidatePath);
@@ -182,6 +186,7 @@ async function upsert(lib, candidatePath, info) {
     id = Number(insertGame.run(lib.id, candidatePath, info.kind, info.platform, ...values, info.sizeBytes, info.fileCount, nowIso(), info.modifiedAt).lastInsertRowid);
     scanState.added++;
   }
+  setFirmware.run(info.requiredFw || null, id);
   if (!existing || !existing.local_icon) {
     const icon = info.iconBuf ? await saveBuffer(id, 'local-icon.png', info.iconBuf) : await copyInto(id, 'local-icon.png', info.icon);
     if (icon) db.prepare('UPDATE games SET local_icon = ? WHERE id = ?').run(icon, id);

@@ -229,3 +229,17 @@ test('recognises homebrew apps and skips their lookups', async () => {
     globalThis.fetch = realFetch;
   }
 });
+
+test('required firmware from param.json and param.sfo', async () => {
+  const { firmwareFromPs5, firmwareFromPs4, compareFirmware } = await import('../server/parsers/sfo.js');
+  assert.equal(firmwareFromPs5('0x0700000000000000'), '7.00');
+  assert.equal(firmwareFromPs5('0x1002000000000000'), '10.02');
+  assert.equal(firmwareFromPs5('0x0960000000000000'), '9.60');
+  assert.equal(firmwareFromPs5(undefined), null);
+  assert.equal(firmwareFromPs5('nonsense'), null);
+  assert.equal(firmwareFromPs4(0x05050000), '5.05');
+  assert.equal(firmwareFromPs4(0x11000000), '11.00');
+  assert.ok(compareFirmware('10.00', '9.60') > 0);
+  assert.ok(compareFirmware('7.00', '9.60') < 0);
+  assert.equal(compareFirmware('9.60', '9.60'), 0);
+});

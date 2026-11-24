@@ -99,6 +99,12 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 `);
 
+// Columns added after the first release.
+{
+  const have = new Set(db.prepare('PRAGMA table_info(games)').all().map((c) => c.name));
+  if (!have.has('required_fw')) db.exec('ALTER TABLE games ADD COLUMN required_fw TEXT');
+}
+
 // Matches you made by hand before this table existed.
 db.exec(`INSERT OR IGNORE INTO title_matches (title_id, igdb_id, updated_at)
   SELECT title_id, igdb_id, datetime('now') FROM games
@@ -152,6 +158,7 @@ export function rowToGame(row, { full = false } = {}) {
     titleId: row.title_id,
     contentId: row.content_id,
     version: row.version,
+    requiredFirmware: row.required_fw || null,
     releaseDate: row.release_date,
     matchStatus: isApp ? 'app' : row.match_status,
     isApp,

@@ -1,5 +1,5 @@
 import fs from 'node:fs/promises';
-import { parseSfo } from './sfo.js';
+import { parseSfo, firmwareFromPs4 } from './sfo.js';
 
 const PKG_MAGIC = 0x7f434e54; // "\x7FCNT"
 const ENTRY_PARAM_SFO = 0x1000;
@@ -54,7 +54,8 @@ export async function readPkg(file, { images = false } = {}) {
       titleId: sfo.TITLE_ID || (contentIdHeader ? contentIdHeader.slice(7, 16) : null),
       title: sfo.TITLE || null,
       version: sfo.APP_VER || sfo.VERSION || null,
-      category: sfo.CATEGORY || null // gd = game, gp = patch, ac = add-on
+      category: sfo.CATEGORY || null, // gd = game, gp = patch, ac = add-on
+      requiredFw: firmwareFromPs4(sfo.SYSTEM_VER)
     };
     if (images) {
       result.icon0 = await readEntry(ENTRY_ICON0);

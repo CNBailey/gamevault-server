@@ -33,3 +33,34 @@ export function parseSfo(buf) {
   }
   return out;
 }
+
+/**
+ * Firmware a title needs, as "7.00".
+ * PS5 param.json: requiredSystemSoftwareVersion "0x0700000000000000" (BCD).
+ * PS4 param.sfo: SYSTEM_VER 0x05050000 (BCD).
+ */
+export function firmwareFromPs5(value) {
+  if (value == null) return null;
+  const hex = String(value).replace(/^0x/i, '').padStart(16, '0');
+  if (!/^[0-9a-f]{16}$/i.test(hex)) return null;
+  const major = Number(hex.slice(0, 2));
+  const minor = hex.slice(2, 4);
+  if (!Number.isFinite(major) || !/^\d\d$/.test(minor) || (major === 0 && minor === '00')) return null;
+  return `${major}.${minor}`;
+}
+
+export function firmwareFromPs4(value) {
+  if (typeof value !== 'number' || !value) return null;
+  const hex = value.toString(16).padStart(8, '0');
+  const major = Number(hex.slice(0, 2));
+  const minor = hex.slice(2, 4);
+  if (!Number.isFinite(major) || !/^\d\d$/.test(minor)) return null;
+  return `${major}.${minor}`;
+}
+
+/** Compares "7.00" style versions. */
+export function compareFirmware(a, b) {
+  const [am, an] = String(a).split('.').map(Number);
+  const [bm, bn] = String(b).split('.').map(Number);
+  return (am - bm) || ((an || 0) - (bn || 0));
+}
