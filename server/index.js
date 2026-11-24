@@ -9,6 +9,7 @@ import { badgesDir, defaultBadgesDir, mediaRoot } from './media.js';
 import api from './routes/api.js';
 import convertApi from './routes/convert.js';
 import { startConversionService, stopConversionService } from './convert/service.js';
+import { startClientReleases } from './clientRelease.js';
 
 const app = Fastify({ logger: { level: process.env.GV_LOG_LEVEL || 'info' } });
 
@@ -69,6 +70,7 @@ await app.listen({ port: config.port, host: config.host });
 const count = db.prepare('SELECT COUNT(*) AS n FROM games').get().n;
 if ((count === 0 || librariesMoved) && db.prepare('SELECT COUNT(*) AS n FROM libraries').get().n > 0) runScan();
 startConversionService();
+if (process.env.GV_CLIENT_UPDATES !== "0") startClientReleases();
 
 for (const sig of ['SIGINT', 'SIGTERM']) {
   process.on(sig, async () => {

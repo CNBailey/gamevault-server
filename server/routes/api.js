@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { clientInfo, clientFile, checkClientRelease } from '../clientRelease.js';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { config } from '../config.js';
@@ -84,6 +85,17 @@ export default async function api(app) {
         : fs.existsSync(path.join(defaultBadgesDir, `${p.toLowerCase()}.png`)) ? `/badges/default/${p.toLowerCase()}.png` : null;
     }
     return out;
+  });
+
+  // ---- GameVault for PS5: the newest gamevault.elf, for the console ------------
+  app.get('/client', async () => clientInfo());
+  app.post('/client/check', async () => { await checkClientRelease(); return clientInfo(); });
+  app.get('/client/gamevault.elf', async (req, reply) => {
+    const file = clientFile();
+    if (!file) return reply.code(404).send({ error: 'No copy of GameVault for PS5 yet' });
+    reply.header('Content-Type', 'application/octet-stream');
+    reply.header('Content-Disposition', 'attachment; filename="gamevault.elf"');
+    return sendFileWithRange(req, reply, file);
   });
 
   // ---- Games ---------------------------------------------------------------
