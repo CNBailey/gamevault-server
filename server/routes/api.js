@@ -4,7 +4,7 @@ import path from 'node:path';
 import { config } from '../config.js';
 import { db, getSetting, rowToGame, setSetting } from '../db.js';
 import { resolveInside, walkFiles } from '../files.js';
-import { badgesDir } from '../media.js';
+import { badgesDir, defaultBadgesDir } from '../media.js';
 import { runScan, scheduleScans } from '../jobs.js';
 import { purgeMissing, scanState } from '../scanner.js';
 import { candidateSummary, matchGame, resetToken, scrapeGame, scraperConfigured, searchIgdb } from '../scraper.js';
@@ -78,7 +78,9 @@ export default async function api(app) {
     const out = {};
     for (const p of ['PS5', 'PS4']) {
       const file = ['svg', 'png', 'webp'].map((ext) => `${p.toLowerCase()}.${ext}`).find((f) => fs.existsSync(path.join(badgesDir, f)));
-      out[p] = file ? `/badges/${file}?v=${Math.round(fs.statSync(path.join(badgesDir, file)).mtimeMs)}` : null;
+      out[p] = file
+        ? `/badges/${file}?v=${Math.round(fs.statSync(path.join(badgesDir, file)).mtimeMs)}`
+        : fs.existsSync(path.join(defaultBadgesDir, `${p.toLowerCase()}.png`)) ? `/badges/default/${p.toLowerCase()}.png` : null;
     }
     return out;
   });

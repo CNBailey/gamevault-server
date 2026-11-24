@@ -1,10 +1,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 
 export const mediaRoot = path.join(config.dataDir, 'media');
 /** Put ps5.svg / ps4.png (etc.) here to replace the text platform badges. */
 export const badgesDir = path.join(config.dataDir, 'badges');
+/** Built-in badges shipped with the app (server/assets/badges). */
+export const defaultBadgesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'assets', 'badges');
 
 function gameDir(gameId) {
   return path.join(mediaRoot, String(gameId));
