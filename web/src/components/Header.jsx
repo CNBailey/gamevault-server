@@ -15,7 +15,7 @@ export default function Header({ section, search, onSearch, showSearch, scan, co
   return (
     <header className="topbar">
       <div className="container topbar-inner">
-        <a href="#/" className="brand"><Logo /><span>GameVault</span></a>
+        <a href="#/" className="brand" aria-label="GameVault home"><Logo /><span>Game<span className="brand-accent">Vault</span></span></a>
         <nav aria-label="Main" className="nav">
           <a href="#/" aria-current={section === 'library' ? 'page' : undefined}>Library</a>
           {conv?.enabled && (

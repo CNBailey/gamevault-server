@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo/app-icon-512.png" width="112" alt="GameVault"></p>
+
 # GameVault
 
 A self-hosted catalogue for PlayStation game dumps, served as a web page from your NAS. It works like Ember Media Manager does for movies.

@@ -65,6 +65,7 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
 .topbar-inner { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding-top: 14px; padding-bottom: 14px; }
 .brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; }
 .brand:hover { color: var(--text); }
+.brand-accent { color: var(--accent); }
 .nav { display: flex; gap: 4px; }
 .nav a { padding: 10px 14px; border-radius: 8px; color: var(--muted); text-decoration: none; font-weight: 500; }
 .nav a[aria-current='page'] { background: #1B222C; color: var(--text); font-weight: 600; }

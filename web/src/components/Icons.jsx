@@ -10,13 +10,12 @@ export function StarIcon({ filled, size = 20, stroke = filled ? '#F5B841' : '#E8
   );
 }
 
-export function Logo() {
+/** GameVault mark: two game cases leaning together into a V. */
+export function Logo({ size = 30 }) {
   return (
-    <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
-      <rect x="2" y="6" width="28" height="20" rx="6" fill="#5B8CFF" />
-      <circle cx="11" cy="16" r="3" fill="#0D1015" />
-      <rect x="19" y="13" width="7" height="2.4" rx="1.2" fill="#0D1015" />
-      <rect x="19" y="17" width="5" height="2.4" rx="1.2" fill="#0D1015" />
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M7 7 H20 L37 57 H25 Z" fill="#5B8CFF" stroke="#5B8CFF" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M57 7 H44 L27 57 H39 Z" fill="#A9C2FF" stroke="#10141A" strokeWidth="3" strokeLinejoin="round" />
     </svg>
   );
 }
