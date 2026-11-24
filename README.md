@@ -32,7 +32,7 @@ Each library folder is searched up to 4 levels deep. A game is:
 
 | On disk | Detected as |
 |---|---|
-| `PPSA12345-Name (v01.000.000).exfat` (+ optional `.exfat.ps5-archive.json`) | PS5 exFAT image; details read from `sce_sys/param.json` inside the image, then the JSON beside it, then the file name |
+| `PPSA12345-Name (v01.000.000).exfat` | PS5 exFAT image; details read from `sce_sys/param.json` inside the image, falling back to the file name |
 | `Some Game/sce_sys/param.json` | PS5 folder dump |
 | `Some Game/sce_sys/param.sfo` | PS4 folder dump |
 | `Some Game/*.pkg` (any `.pkg` up to 2 levels inside) | PS4 PKG game; the base game, updates and DLC are grouped together |

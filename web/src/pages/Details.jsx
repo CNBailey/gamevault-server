@@ -5,7 +5,7 @@ import FixMatch from '../components/FixMatch.jsx';
 import { Icon, PlatformBadge, PlayIcon, StarIcon } from '../components/Icons.jsx';
 
 const KIND = { 'ps5-exfat': 'PS5 exFAT image', 'ps5-folder': 'PS5 folder dump', 'ps4-folder': 'PS4 folder dump', 'ps4-pkg': 'PS4 PKG' };
-const PART = { gd: 'Game', gp: 'Update', ac: 'Add-on', image: 'Game image', info: 'Info file' };
+const PART = { gd: 'Game', gp: 'Update', ac: 'Add-on', image: 'Game image' };
 const STATUS = {
   matched: ['#3FCF8E', 'Matched on IGDB'],
   manual: ['#3FCF8E', 'Matched on IGDB (chosen by you)'],

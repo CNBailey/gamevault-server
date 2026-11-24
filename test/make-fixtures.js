@@ -76,7 +76,7 @@ function ps5Dump(dir, { title, titleId, version = '01.000.000' }) {
 }
 
 /** A PS5 .exfat game image; falls back to an unreadable blob when mkfs.exfat is missing. */
-export function ps5Exfat(file, { title, titleId, version = '01.000.000', sidecar = null }) {
+export function ps5Exfat(file, { title, titleId, version = '01.000.000' }) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.rmSync(file, { force: true });
   try {
@@ -93,7 +93,6 @@ export function ps5Exfat(file, { title, titleId, version = '01.000.000', sidecar
   } catch {
     fs.writeFileSync(file, Buffer.alloc(1024 * 1024));
   }
-  if (sidecar) fs.writeFileSync(`${file}.ps5-archive.json`, JSON.stringify(sidecar, null, 2));
 }
 
 if (process.argv[1] && import.meta.url === new URL(`file://${path.resolve(process.argv[1])}`).href) {
@@ -101,7 +100,7 @@ if (process.argv[1] && import.meta.url === new URL(`file://${path.resolve(proces
   ps5Dump(path.join(out, 'PS5', 'Astro Bot'), { title: 'ASTRO BOT', titleId: 'PPSA00001' });
   ps5Dump(path.join(out, 'PS5', 'Returnal [PPSA00002]'), { title: 'Returnal™', titleId: 'PPSA00002' });
   ps5Dump(path.join(out, 'PS5', 'Shooters', 'dump_0412'), { title: '', titleId: 'PPSA00003' });
-  ps5Exfat(path.join(out, 'PS5', 'PPSA22453-Tomb Raider Legend (v01.000.004).exfat'), { title: 'Tomb Raider: Legend', titleId: 'PPSA22453', version: '01.000.004', sidecar: { titleId: 'PPSA22453', version: '01.000.004' } });
+  ps5Exfat(path.join(out, 'PS5', 'PPSA22453-Tomb Raider Legend (v01.000.004).exfat'), { title: 'Tomb Raider: Legend', titleId: 'PPSA22453', version: '01.000.004' });
   ps5Exfat(path.join(out, 'PS5', 'PPSA16716-The Smurfs 2 - The Prisoner of the Gree (v01.000.000).exfat'), { title: 'The Smurfs 2 - The Prisoner of the Green Stone', titleId: 'PPSA16716' });
   // Not a real image: details must come from the file name.
   write(path.join(out, 'PS5', 'PPSA01864-LEGO® Star Wars™ The Skywalker Saga (v01.010.000).exfat'), Buffer.alloc(256 * 1024));

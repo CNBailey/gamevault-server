@@ -98,18 +98,14 @@ async function inspect(candidate, libraryPlatform) {
   if (candidate.type === 'exfat') {
     const st = await fs.stat(candidate.path);
     const meta = await readPs5Exfat(candidate.path, readExfatGame);
-    const sidecar = await fs.stat(`${candidate.path}.ps5-archive.json`).catch(() => null);
     const name = path.basename(candidate.path);
     return {
       ...meta,
       title: meta.title || cleanName(name),
-      sizeBytes: st.size + (sidecar ? sidecar.size : 0),
-      fileCount: sidecar ? 2 : 1,
+      sizeBytes: st.size,
+      fileCount: 1,
       modifiedAt: st.mtime.toISOString(),
-      pkgs: [
-        { path: name, size: st.size, category: 'image', version: meta.version },
-        ...(sidecar ? [{ path: `${name}.ps5-archive.json`, size: sidecar.size, category: 'info', version: null }] : [])
-      ]
+      pkgs: [{ path: name, size: st.size, category: 'image', version: meta.version }]
     };
   }
   if (candidate.type === 'folder') {

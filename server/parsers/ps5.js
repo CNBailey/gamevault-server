@@ -19,22 +19,6 @@ function fromParamJson(json) {
   };
 }
 
-/** Breadth-first search for the first key (case-insensitive) with a string value. */
-function findKey(obj, names) {
-  const wanted = names.map((n) => n.toLowerCase());
-  const queue = [obj];
-  let guard = 0;
-  while (queue.length && guard++ < 2000) {
-    const cur = queue.shift();
-    if (!cur || typeof cur !== 'object') continue;
-    for (const [k, v] of Object.entries(cur)) {
-      if (wanted.includes(k.toLowerCase()) && (typeof v === 'string' || typeof v === 'number') && String(v).trim()) return String(v).trim();
-    }
-    for (const v of Object.values(cur)) if (v && typeof v === 'object') queue.push(v);
-  }
-  return null;
-}
-
 /** "PPSA22453-Tomb Raider Legend (v01.000.004).exfat" */
 export function parseExfatName(file) {
   const base = path.basename(file).replace(/\.exfat$/i, '');
@@ -44,25 +28,11 @@ export function parseExfatName(file) {
 }
 
 /**
- * PS5 exFAT image (<name>.exfat), optionally with a "<name>.exfat.ps5-archive.json" beside it.
- * Details come from param.json inside the image, then the sidecar JSON, then the file name.
+ * PS5 exFAT image (<name>.exfat). Details come from sce_sys/param.json inside the
+ * image, falling back to the file name: "PPSA22453-Tomb Raider Legend (v01.000.004).exfat".
  */
 export async function readPs5Exfat(file, readImage) {
   const fromName = parseExfatName(file);
-  let sidecar = {};
-  try {
-    const json = JSON.parse(await fs.readFile(`${file}.ps5-archive.json`, 'utf8'));
-    if (json.localizedParameters) sidecar = fromParamJson(json);
-    else {
-      sidecar = {
-        titleId: findKey(json, ['titleId', 'title_id']),
-        contentId: findKey(json, ['contentId', 'content_id']),
-        version: findKey(json, ['contentVersion', 'appVersion', 'app_ver', 'version']),
-        title: findKey(json, ['titleName', 'title_name', 'title'])
-      };
-    }
-  } catch { /* no sidecar, or not JSON */ }
-
   let image = {};
   let icon = null;
   let backdrop = null;
@@ -75,7 +45,7 @@ export async function readPs5Exfat(file, readImage) {
     }
   } catch { /* unreadable image: fall back to the name */ }
 
-  const pick = (k) => image[k] || sidecar[k] || fromName[k] || null;
+  const pick = (k) => image[k] || fromName[k] || null;
   return {
     platform: 'PS5',
     kind: 'ps5-exfat',
@@ -85,8 +55,7 @@ export async function readPs5Exfat(file, readImage) {
     category: image.category || null,
     title: pick('title'),
     iconBuf: icon,
-    backdropBuf: backdrop,
-    hasSidecar: Object.keys(sidecar).length > 0
+    backdropBuf: backdrop
   };
 }
 
