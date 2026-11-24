@@ -283,6 +283,7 @@ const insertJob = db.prepare(`INSERT INTO conversions (platform, source, source_
 
 export async function poll() {
   if (!isEnabled()) return;
+  if (!(await checkLayout()).ok) return;
   const d = dirs();
   const seen = new Set();
   for (const platform of ['PS5', 'PS4']) {
@@ -326,8 +327,10 @@ export async function startConversionService() {
   if (timer) clearInterval(timer);
   timer = setInterval(() => poll().catch((err) => console.warn('[convert] poll:', err.message)), POLL_MS);
   if (isEnabled()) {
-    await ensureDirs();
-    poll().catch(() => {});
+    if ((await checkLayout()).ok) {
+      await ensureDirs();
+      poll().catch(() => {});
+    }
   }
 }
 
@@ -337,12 +340,42 @@ export async function stopConversionService() {
   for (const job of Object.values(running)) if (job?.child) job.child.kill('SIGINT');
 }
 
+/**
+ * The incoming folders must be on the same mounted share as the libraries: otherwise they are
+ * created inside the container (invisible on the NAS) and finished games would need copying.
+ * That happens when docker-compose still mounts the PS4/PS5 folders separately.
+ */
+export async function checkLayout() {
+  const libs = db.prepare('SELECT path FROM libraries WHERE enabled = 1').all();
+  if (!libs.length) return { ok: false, problem: 'No library folders are set up yet.' };
+  const incomingParent = path.dirname(config.incomingDir);
+  let devIncoming;
+  try { devIncoming = (await fsp.stat(fs.existsSync(config.incomingDir) ? config.incomingDir : incomingParent)).dev; } catch {
+    return { ok: false, problem: `${incomingParent} does not exist in the container.` };
+  }
+  for (const l of libs) {
+    let dev;
+    try { dev = (await fsp.stat(l.path)).dev; } catch { continue; }
+    if (dev !== devIncoming) {
+      return {
+        ok: false,
+        problem: `The incoming folder (${config.incomingDir}) is not on the same share as the library (${l.path}), so you would not see it on the NAS. Update the project's docker-compose.yml to mount the whole Games share (/volume1/Games:/games) and rebuild.`
+      };
+    }
+  }
+  return { ok: true, problem: null };
+}
+
 async function ensureDirs() {
   const d = dirs();
   for (const p of [d.PS5, d.PS4, d.done, d.work]) await fsp.mkdir(p, { recursive: true });
 }
 
 export async function setEnabled(on) {
+  if (on) {
+    const layout = await checkLayout();
+    if (!layout.ok) throw new JobError(layout.problem);
+  }
   setSetting('conversion_enabled', on ? '1' : '0');
   if (on) {
     await ensureDirs();
@@ -426,6 +459,7 @@ export async function status() {
     settleSeconds: settleMs() / 1000,
     folders: dirs(),
     forge: { ...forgeInfo, version: config.forgeVersion || null },
+    layout: await checkLayout(),
     waiting: [...settling.values()].map((s) => ({
       platform: s.platform, name: s.name, size: s.size,
       secondsLeft: Math.max(0, Math.ceil((settleMs() - (Date.now() - s.since)) / 1000))

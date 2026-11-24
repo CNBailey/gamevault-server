@@ -200,6 +200,7 @@ export default function Settings({ scan, onConversionChange }) {
             <p className="muted small">Converts PS5 games dropped in the incoming folder to .exfat and renames PS4 .pkg files, then moves them into your library.</p>
             {conv && (
               <div className="stack">
+                {!conv.layout.ok && <p className="error small">{conv.layout.problem}</p>}
                 <label className="row gap-10 strong">
                   <input type="checkbox" className="switch" checked={conv.enabled} onChange={(e) => saveConversion({ enabled: e.target.checked })} />
                   {conv.enabled ? 'On' : 'Off'}

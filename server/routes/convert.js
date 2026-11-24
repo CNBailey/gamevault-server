@@ -4,9 +4,11 @@ import { applyRenames, previewRenames } from '../convert/tidy.js';
 export default async function convertApi(app) {
   app.get('/conversions', async () => conv.status());
 
-  app.put('/conversions/settings', async (req) => {
+  app.put('/conversions/settings', async (req, reply) => {
     const b = req.body || {};
-    if (typeof b.enabled === 'boolean') await conv.setEnabled(b.enabled);
+    if (typeof b.enabled === 'boolean') {
+      try { await conv.setEnabled(b.enabled); } catch (err) { return reply.code(409).send({ error: err.message }); }
+    }
     if (b.settleSeconds != null) conv.setSettleSeconds(b.settleSeconds);
     return conv.status();
   });

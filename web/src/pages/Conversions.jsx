@@ -66,6 +66,7 @@ export default function Conversions({ onChange }) {
           <p>Turn it on in <a href="#/settings">Settings → Conversion service</a>.</p>
         </div>
       )}
+      {s.enabled && !s.layout.ok && <p className="error">{s.layout.problem}</p>}
       {s.enabled && !s.forge.available && (
         <p className="error">PS5 Dump Forge isn’t available ({s.forge.error}). PS4 renaming still works; PS5 conversions will fail.</p>
       )}
