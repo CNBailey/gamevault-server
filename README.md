@@ -45,7 +45,12 @@ PS4 patches (a `.pkg` or folder whose name ends in `patch`, or PKGs that are all
 
 Synology's `@eaDir` and `#recycle` folders are ignored. If a game disappears from disk it is flagged rather than deleted, so its favourite survives; **Settings → Needs review** lets you clean these up.
 
-Matching searches IGDB by the title inside the dump (falling back to the file name), with ®/™ symbols, `(PS5)` tags and edition words cleaned out. IGDB does not store PlayStation title IDs, so they can't be used for lookups; instead, a match you fix by hand is remembered by title ID (CUSA…/PPSA…) and reused when that game is re-dumped, updated, renamed or converted. Uncertain matches appear under **Needs review**. **Fix match** on any game lets you search IGDB yourself.
+Matching, in order:
+
+1. **A match you fixed by hand** before, remembered by title ID (CUSA…/PPSA…) and reused when that game is re-dumped, updated, renamed or converted.
+2. **Exact match via [GarlicSaves](https://garlicsaves.com/tools/title-lookup)** (on by default; switch it off in Settings → Metadata & media). The title ID gives the official name and the PlayStation Store concept number, which IGDB stores too. Each ID is looked up once and cached, at most one request per second.
+3. **Name search** on IGDB, using the official name from GarlicSaves when there is one (else the title inside the dump, else the file name), with ®/™ symbols, `(PS5)` tags and edition words cleaned out.
+4. **Fix match** by hand. Uncertain matches appear under **Needs review**. **Fix match** on any game lets you search IGDB yourself.
 
 ## Conversion service
 

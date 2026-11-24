@@ -7,6 +7,7 @@ import { resolveInside, walkFiles } from '../files.js';
 import { badgesDir, defaultBadgesDir } from '../media.js';
 import { runScan, scheduleScans } from '../jobs.js';
 import { purgeMissing, scanState } from '../scanner.js';
+import { garlicEnabled, garlicStatus, lookupStats, setGarlicEnabled } from '../garlicsaves.js';
 import { candidateSummary, matchGame, resetToken, scrapeGame, scraperConfigured, searchIgdb } from '../scraper.js';
 
 const SORTS = {
@@ -112,7 +113,9 @@ export default async function api(app) {
 
   app.get('/games/:id', async (req, reply) => {
     const row = getRow(req.params.id);
-    return row ? rowToGame(row, { full: true }) : notFound(reply);
+    if (!row) return notFound(reply);
+    const official = row.title_id ? db.prepare('SELECT name FROM title_lookups WHERE title_id = ? AND found = 1').get(row.title_id) : null;
+    return { ...rowToGame(row, { full: true }), officialName: official?.name || null };
   });
 
   app.put('/games/:id/favourite', async (req, reply) => {
@@ -246,11 +249,15 @@ export default async function api(app) {
     scanIntervalHours: Number(getSetting('scan_interval_hours', String(config.scanIntervalHours))),
     port: config.port,
     version: config.version,
-    missingCount: db.prepare('SELECT COUNT(*) AS n FROM games WHERE missing = 1').get().n
+    missingCount: db.prepare('SELECT COUNT(*) AS n FROM games WHERE missing = 1').get().n,
+    garlicEnabled: garlicEnabled(),
+    garlicStatus: garlicStatus(),
+    garlicStats: lookupStats()
   }));
 
   app.put('/settings', async (req) => {
     const b = req.body || {};
+    if (typeof b.garlicEnabled === 'boolean') setGarlicEnabled(b.garlicEnabled);
     if (typeof b.igdbClientId === 'string') setSetting('igdb_client_id', b.igdbClientId.trim());
     if (typeof b.igdbClientSecret === 'string' && b.igdbClientSecret.trim()) setSetting('igdb_client_secret', b.igdbClientSecret.trim());
     if (b.scanIntervalHours != null && !Number.isNaN(Number(b.scanIntervalHours))) {

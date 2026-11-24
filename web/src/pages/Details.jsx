@@ -7,6 +7,7 @@ import { Icon, PlatformBadge, PlayIcon, StarIcon } from '../components/Icons.jsx
 const KIND = { 'ps5-exfat': 'PS5 exFAT image', 'ps5-folder': 'PS5 folder dump', 'ps4-folder': 'PS4 folder dump', 'ps4-pkg': 'PS4 PKG' };
 const PART = { gd: 'Game', gp: 'Update', ac: 'Add-on', image: 'Game image' };
 const STATUS = {
+  exact: ['#3FCF8E', 'Exact match by PlayStation title ID (via GarlicSaves)'],
   matched: ['#3FCF8E', 'Matched on IGDB by name'],
   manual: ['#3FCF8E', 'Matched on IGDB (chosen by you, remembered by title ID)'],
   review: ['#F5B841', 'Matched on IGDB — please check it is the right game'],
@@ -189,6 +190,7 @@ export default function Details({ id, scanVersion }) {
               <dt>Category</dt><dd>{game.genres.join(', ') || '—'}</dd>
               <dt>Modes</dt><dd>{game.modes.join(', ') || '—'}</dd>
               <dt>Name in dump</dt><dd>{game.localTitle || '—'}</dd>
+              {game.officialName && game.officialName !== game.localTitle && <><dt>Official name</dt><dd>{game.officialName}</dd></>}
             </dl>
           </section>
 

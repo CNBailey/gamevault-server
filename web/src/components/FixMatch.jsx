@@ -5,7 +5,7 @@ import { Icon } from './Icons.jsx';
 /** Dialog to search IGDB and pick the right game for a folder. */
 export default function FixMatch({ game, onClose, onMatched }) {
   const ref = useRef(null);
-  const [q, setQ] = useState(game.localTitle || game.title || '');
+  const [q, setQ] = useState(game.officialName || game.localTitle || game.title || '');
   const [results, setResults] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);

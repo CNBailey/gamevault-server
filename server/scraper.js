@@ -2,6 +2,7 @@ import { config } from './config.js';
 import { db, getSetting } from './db.js';
 import { clearScraped, download } from './media.js';
 import { scanState } from './scanner.js';
+import { lookupTitleId } from './garlicsaves.js';
 
 // IGDB platform ids
 const PLATFORM_IDS = { PS4: 48, PS5: 167 };
@@ -158,6 +159,22 @@ export async function searchIgdb(title, platform) {
   return [...byId.values()].sort((a, b) => b.score - a.score);
 }
 
+/**
+ * Exact match: the IGDB game whose PlayStation Store link (external source 36) has this
+ * concept number. When several games share it, the one whose name fits best wins.
+ */
+export async function findByConcept(conceptId, platform, name) {
+  if (!/^\d+$/.test(String(conceptId || ''))) return null;
+  const links = await igdb('external_games', `fields game; where external_game_source = 36 & uid = "${conceptId}"; limit 10;`);
+  const ids = [...new Set(links.map((l) => (l.game && typeof l.game === 'object' ? l.game.id : l.game)).filter(Boolean))];
+  if (!ids.length) return null;
+  const games = await igdb('games', `fields ${FIELDS}; where id = (${ids.join(',')}); limit 10;`);
+  if (games.length <= 1) return games[0] || null;
+  const pid = PLATFORM_IDS[platform];
+  const rank = (g) => ((g.platforms || []).includes(pid) ? 1 : 0) + (name ? similarity(name, g.name) : 0);
+  return games.sort((a, b) => rank(b) - rank(a))[0];
+}
+
 export async function getIgdbGame(igdbId) {
   const rows = await igdb('games', `fields ${FIELDS}; where id = ${Number(igdbId)};`);
   return rows[0] || null;
@@ -227,7 +244,21 @@ export async function scrapeGame(gameId) {
         return;
       }
     }
-    const results = await searchIgdb(title, row.platform);
+    // GarlicSaves: official name and PlayStation Store concept number for the title ID.
+    const official = await lookupTitleId(row.title_id);
+    if (official?.conceptId) {
+      const exact = await findByConcept(official.conceptId, row.platform, official.name || title);
+      if (exact) {
+        await applyIgdb(gameId, exact, 'exact', 1);
+        return;
+      }
+    }
+    // Name search, preferring the official name (e.g. "Call of Duty®: Modern Warfare II" over "Call of Duty®").
+    let results = await searchIgdb(official?.name || title, row.platform);
+    if (official?.name && (!results[0] || results[0].score < 0.85)) {
+      const fromDump = await searchIgdb(title, row.platform);
+      if (fromDump[0] && (!results[0] || fromDump[0].score > results[0].score)) results = fromDump;
+    }
     const best = results[0];
     if (!best || best.score < 0.55) {
       db.prepare("UPDATE games SET match_status = 'unmatched', match_score = ?, scraped_at = ?, scrape_error = NULL WHERE id = ?")

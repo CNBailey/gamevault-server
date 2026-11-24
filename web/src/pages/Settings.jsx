@@ -193,6 +193,25 @@ export default function Settings({ scan, onConversionChange }) {
               <button className="btn btn-primary">Save</button>
               {msg.settings && <p className="small" role="status">{msg.settings}</p>}
             </form>
+            {settings && (
+              <div className="stack garlic">
+                <label className="row gap-10 strong">
+                  <input
+                    type="checkbox"
+                    className="switch"
+                    checked={settings.garlicEnabled}
+                    onChange={async (e) => { await api.saveSettings({ garlicEnabled: e.target.checked }); load(); }}
+                  />
+                  Look up title IDs on GarlicSaves
+                </label>
+                <p className="muted small">Gets each game&apos;s official name and PlayStation Store number from its CUSA/PPSA ID, for exact IGDB matches. Each ID is looked up once and remembered.</p>
+                {settings.garlicEnabled && settings.garlicStatus && (
+                  <p className={`small ${settings.garlicStatus.ok ? 'muted' : 'error'}`}>
+                    {settings.garlicStatus.ok ? 'Working' : settings.garlicStatus.message} · {settings.garlicStats.found} of {settings.garlicStats.total} IDs found
+                  </p>
+                )}
+              </div>
+            )}
           </section>
 
           <section className="card" aria-labelledby="h-conv">

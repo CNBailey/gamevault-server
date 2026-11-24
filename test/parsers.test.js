@@ -148,3 +148,62 @@ test('library file names', async () => {
   assert.throws(() => libraryName({ titleId: 'nope', title: 'x', ext: '.pkg' }));
   assert.equal(uniqueName('a.exfat', (n) => n === 'a.exfat'), 'a (2).exfat');
 });
+
+test('exact match through GarlicSaves concept number, with fallbacks', async () => {
+  const { db, setSetting } = await import('../server/db.js');
+  const { scrapeGame, resetToken } = await import('../server/scraper.js');
+  const { setGarlicEnabled, garlicStatus } = await import('../server/garlicsaves.js');
+  setSetting('igdb_client_id', 'test-id');
+  setSetting('igdb_client_secret', 'test-secret');
+  resetToken();
+  let garlic = 'ok';
+  const calls = [];
+  const realFetch = globalThis.fetch;
+  const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'content-type': 'application/json' } });
+  globalThis.fetch = async (url, opts) => {
+    const u = String(url);
+    calls.push({ u, body: opts?.body });
+    if (u.includes('oauth2/token')) return json({ access_token: 't', expires_in: 3600 });
+    if (u.includes('garlicsaves.com')) {
+      if (garlic === 'blocked') return new Response('<html>Just a moment...</html>', { status: 403, headers: { 'content-type': 'text/html' } });
+      return json({ results: [{ concept_id: 233064, name: 'Back 4 Blood', platform: 'ps5', region: 'US', title_id: 'PPSA01695' }] });
+    }
+    if (u.endsWith('/external_games')) return json(/uid = "233064"/.test(opts.body) ? [{ id: 1, game: 116200 }] : []);
+    if (u.endsWith('/games')) {
+      if (/where id = \(116200\)/.test(opts.body)) return json([{ id: 116200, name: 'Back 4 Blood', platforms: [167] }]);
+      return json([{ id: 555, name: 'Back 4 Blood', platforms: [167] }]);  // name search
+    }
+    return new Response('[]', { status: 404 });
+  };
+  const add = (p, tid) => Number(db.prepare("INSERT INTO games (path, kind, platform, title_id, local_title, added_at) VALUES (?, 'ps5-exfat', 'PS5', ?, 'Back 4 Blood', datetime())").run(p, tid).lastInsertRowid);
+  const status = (id) => db.prepare('SELECT igdb_id, match_status FROM games WHERE id = ?').get(id);
+  try {
+    const a = add('/g/b4b.exfat', 'PPSA01695');
+    await scrapeGame(a);
+    assert.deepEqual({ ...status(a) }, { igdb_id: 116200, match_status: 'exact' });
+    assert.equal(calls.filter((c) => c.u.includes('garlicsaves')).length, 1);
+    // Cached: a second game with the same ID does not ask GarlicSaves again.
+    calls.length = 0;
+    await scrapeGame(add('/g/b4b2.exfat', 'PPSA01695'));
+    assert.equal(calls.filter((c) => c.u.includes('garlicsaves')).length, 0);
+
+    // Switched off: name search only.
+    setGarlicEnabled(false);
+    calls.length = 0;
+    const b = add('/g/other.exfat', 'PPSA01696');
+    await scrapeGame(b);
+    assert.equal(calls.filter((c) => c.u.includes('garlicsaves')).length, 0);
+    assert.equal(status(b).igdb_id, 555);
+
+    // Blocked: falls back to the name search and reports the problem.
+    setGarlicEnabled(true);
+    garlic = 'blocked';
+    const c = add('/g/third.exfat', 'PPSA01697');
+    await scrapeGame(c);
+    assert.equal(status(c).igdb_id, 555);
+    assert.equal(garlicStatus().ok, false);
+    assert.match(garlicStatus().message, /refused/);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
