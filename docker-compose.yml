@@ -3,6 +3,7 @@
 services:
   gamevault:
     image: ghcr.io/cnbailey/gamevault-server:latest
+    pull_policy: always                   # "Build" in Container Manager always fetches the newest version
     container_name: gamevault
     restart: unless-stopped
     ports:

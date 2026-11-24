@@ -19,7 +19,7 @@ Game folders are mounted **read-only**: GameVault never changes your dumps. Its 
 3. In **Container Manager → Project → Create**: name it `gamevault`, choose the path `/volume1/docker/gamevault`, pick **Create docker-compose.yml**, and paste in [`docker-compose.yml`](docker-compose.yml). Change the game paths if your share isn't `/volume1/Games`.
 4. Open `http://<nas-ip>:8686`, then go to **Settings → Metadata & media** and enter your IGDB client ID and secret (see below). Click **Scan & refresh all details**.
 
-To update: **Container Manager → Project → gamevault → Action → Build** (it pulls the newest image).
+To update: **Container Manager → Project → gamevault → Action → Build**. `pull_policy: always` in the compose file makes it download the newest image each time.
 
 ### Getting IGDB credentials (free)
 1. Sign in at <https://dev.twitch.tv/console> (a Twitch account is needed; turn on two-factor authentication if asked).
