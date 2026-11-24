@@ -42,7 +42,7 @@ PS4 patches (a `.pkg` or folder whose name ends in `patch`, or PKGs that are all
 
 Synology's `@eaDir` and `#recycle` folders are ignored. If a game disappears from disk it is flagged rather than deleted, so its favourite survives; **Settings → Needs review** lets you clean these up.
 
-Matching uses the title inside the dump, falling back to the folder name. Uncertain matches appear under **Needs review**. **Fix match** on any game lets you search IGDB yourself.
+Matching first tries the PlayStation title ID (CUSA…/PPSA…) against IGDB's PlayStation Store links for an exact match. If IGDB has no link for that ID, it searches by the title inside the dump (falling back to the file name), with ®/™ symbols, `(PS5)` tags and edition words cleaned out. Uncertain matches appear under **Needs review**. **Fix match** on any game lets you search IGDB yourself.
 
 ## API
 

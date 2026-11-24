@@ -7,7 +7,8 @@ import { Icon, PlatformBadge, PlayIcon, StarIcon } from '../components/Icons.jsx
 const KIND = { 'ps5-exfat': 'PS5 exFAT image', 'ps5-folder': 'PS5 folder dump', 'ps4-folder': 'PS4 folder dump', 'ps4-pkg': 'PS4 PKG' };
 const PART = { gd: 'Game', gp: 'Update', ac: 'Add-on', image: 'Game image' };
 const STATUS = {
-  matched: ['#3FCF8E', 'Matched on IGDB'],
+  matched_id: ['#3FCF8E', 'Matched on IGDB by PlayStation title ID'],
+  matched: ['#3FCF8E', 'Matched on IGDB by name'],
   manual: ['#3FCF8E', 'Matched on IGDB (chosen by you)'],
   review: ['#F5B841', 'Matched on IGDB — please check it is the right game'],
   unmatched: ['#F07A7A', 'No match found on IGDB'],

@@ -158,6 +158,30 @@ export async function searchIgdb(title, platform) {
   return [...byId.values()].sort((a, b) => b.score - a.score);
 }
 
+/**
+ * Exact match by PlayStation title ID (CUSA12345 / PPSA12345): IGDB's links to the
+ * PlayStation Store usually carry the product ID, which contains the title ID.
+ * Returns null when IGDB has no such link, or the ID points at several games.
+ */
+export async function findByTitleId(titleId, localTitle) {
+  const tid = String(titleId || '').toUpperCase();
+  if (!/^(CUSA|PPSA)\d{5}$/.test(tid)) return null;
+  let rows;
+  try {
+    rows = await igdb('external_games', `fields game,uid,url; where uid ~ *"${tid}"* | url ~ *"${tid}"*; limit 20;`);
+  } catch (err) {
+    console.warn(`[scrape] title ID lookup for ${tid} failed: ${err.message}`);
+    return null;
+  }
+  const ids = [...new Set(rows.map((r) => (r.game && typeof r.game === 'object' ? r.game.id : r.game)).filter(Boolean))];
+  if (!ids.length) return null;
+  const games = await igdb('games', `fields ${FIELDS}; where id = (${ids.slice(0, 10).join(',')}); limit 10;`);
+  if (games.length === 1) return games[0];
+  // Several games share the ID (e.g. a bundle): keep the one whose name fits best.
+  const ranked = games.map((g) => ({ g, s: Math.max(...searchVariants(localTitle).map((v) => similarity(v, g.name))) })).sort((a, b) => b.s - a.s);
+  return ranked[0] && ranked[0].s >= 0.5 ? ranked[0].g : null;
+}
+
 export async function getIgdbGame(igdbId) {
   const rows = await igdb('games', `fields ${FIELDS}; where id = ${Number(igdbId)};`);
   return rows[0] || null;
@@ -214,10 +238,15 @@ async function applyIgdb(gameId, g, status, score) {
 
 /** Automatic match: >= 0.85 matched, >= 0.55 kept but flagged for review, else unmatched. */
 export async function scrapeGame(gameId) {
-  const row = db.prepare('SELECT id, local_title, platform, path FROM games WHERE id = ?').get(gameId);
+  const row = db.prepare('SELECT id, local_title, platform, path, title_id FROM games WHERE id = ?').get(gameId);
   if (!row) return;
   const title = row.local_title || row.path.split(/[\\/]/).pop();
   try {
+    const exact = await findByTitleId(row.title_id, title);
+    if (exact) {
+      await applyIgdb(gameId, exact, 'matched_id', 1);
+      return;
+    }
     const results = await searchIgdb(title, row.platform);
     const best = results[0];
     if (!best || best.score < 0.55) {

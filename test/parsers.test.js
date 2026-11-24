@@ -103,3 +103,29 @@ test('cleans titles before searching IGDB', async () => {
   assert.ok(searchVariants('PROTOTYPE® BIOHAZARD BUNDLE').includes('PROTOTYPE BIOHAZARD'));
   assert.deepEqual(searchVariants('Watch Dogs®: Legion'), ['Watch Dogs: Legion', 'Watch Dogs']);
 });
+
+test('matches by PlayStation title ID through IGDB store links', async () => {
+  const { setSetting } = await import('../server/db.js');
+  const { findByTitleId, resetToken } = await import('../server/scraper.js');
+  setSetting('igdb_client_id', 'test-id');
+  setSetting('igdb_client_secret', 'test-secret');
+  resetToken();
+  const calls = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    calls.push({ url: String(url), body: opts?.body });
+    const json = (o) => new Response(JSON.stringify(o), { status: 200, headers: { 'content-type': 'application/json' } });
+    if (String(url).includes('oauth2/token')) return json({ access_token: 't', expires_in: 3600 });
+    if (String(url).endsWith('/external_games')) return json([{ id: 1, game: 9001, uid: 'EP9000-PPSA01325_00-ASTROBOTPS50000' }]);
+    if (String(url).endsWith('/games')) return json([{ id: 9001, name: 'Astro Bot' }]);
+    return new Response('[]', { status: 404 });
+  };
+  try {
+    const g = await findByTitleId('PPSA01325', 'ASTRO BOT');
+    assert.equal(g.name, 'Astro Bot');
+    assert.match(calls.find((c) => c.url.endsWith('/external_games')).body, /uid ~ \*"PPSA01325"\*/);
+    assert.equal(await findByTitleId('not-an-id', 'x'), null);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
