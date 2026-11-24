@@ -108,15 +108,54 @@ export function similarity(a, b) {
   return total ? (2 * overlap) / total : 0;
 }
 
+/**
+ * Turns a dump title into something IGDB's search understands:
+ * "Borderlands®4" -> "Borderlands 4", "WATCH_DOGS® 2" -> "WATCH DOGS 2",
+ * "Aliens: Fireteam Elite (PS5)" -> "Aliens: Fireteam Elite", "[PROTOTYPE® BIOHAZARD BUNDLE]" -> "PROTOTYPE BIOHAZARD BUNDLE".
+ */
+export function searchTitle(title) {
+  return String(title || '')
+    .replace(/[®™©℠]/g, ' ')
+    .normalize('NFKC')
+    .replace(/[([{]\s*(?:PS4|PS5|PSVR2?|PS VR2?|PlayStation\s*[45])\s*[)\]}]/gi, ' ')
+    .replace(/\b(?:PS4|PS5)\s*(?:version|edition)?\s*$/i, ' ')
+    .replace(/[[\]{}]/g, ' ')
+    .replace(/_/g, ' ')
+    .replace(/\s+([:,])/g, '$1')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+const EDITION_WORDS = /\b(?:classic|complete|definitive|deluxe|gold|ultimate|premium|enhanced|anniversary|game of the year|goty|standard|digital|remastered|remaster|bundle|edition|collection|director'?s cut|cross-gen|ps4 & ps5)\b/gi;
+
+/** Search texts to try, most specific first. */
+export function searchVariants(title) {
+  const base = searchTitle(title);
+  const out = [base];
+  const noEdition = base.replace(EDITION_WORDS, ' ').replace(/\s*[-–:]\s*$/, '').replace(/\s{2,}/g, ' ').trim();
+  const noSubtitle = base.split(/\s*[:–]\s+|\s+-\s+/)[0].trim();
+  for (const v of [noEdition, noSubtitle]) if (v && v.length >= 3 && !out.includes(v)) out.push(v);
+  return out;
+}
+
 export async function searchIgdb(title, platform) {
   const pid = PLATFORM_IDS[platform];
-  const name = esc(title).slice(0, 120);
-  let results = await igdb('games', `search "${name}"; fields ${FIELDS}; where platforms = (${pid}); limit 10;`);
-  if (!results.length) results = await igdb('games', `search "${name}"; fields ${FIELDS}; limit 10;`);
-  return results.map((g) => {
+  const variants = searchVariants(title);
+  const byId = new Map();
+  const score = (g) => {
     const onPlatform = (g.platforms || []).includes(pid);
-    return { ...g, score: Math.min(1, similarity(title, g.name) + (onPlatform ? 0.05 : -0.1)) };
-  }).sort((a, b) => b.score - a.score);
+    const sim = Math.max(...variants.map((v) => similarity(v, g.name)));
+    return Math.min(1, sim + (onPlatform ? 0.05 : -0.1));
+  };
+  const add = (rows) => rows.forEach((g) => byId.set(g.id, { ...g, score: score(g) }));
+
+  for (const v of variants) {
+    const q = esc(v).slice(0, 120);
+    add(await igdb('games', `search "${q}"; fields ${FIELDS}; where platforms = (${pid}); limit 10;`));
+    if ([...byId.values()].some((g) => g.score >= 0.85)) break;
+  }
+  if (!byId.size) add(await igdb('games', `search "${esc(variants[0]).slice(0, 120)}"; fields ${FIELDS}; limit 10;`));
+  return [...byId.values()].sort((a, b) => b.score - a.score);
 }
 
 export async function getIgdbGame(igdbId) {
@@ -204,7 +243,7 @@ export async function scrapePending({ all = false } = {}) {
   if (!scraperConfigured()) return;
   const rows = all
     ? db.prepare('SELECT id FROM games WHERE missing = 0').all()
-    : db.prepare("SELECT id FROM games WHERE missing = 0 AND (match_status = 'pending' OR scrape_error IS NOT NULL)").all();
+    : db.prepare("SELECT id FROM games WHERE missing = 0 AND (match_status IN ('pending', 'unmatched') OR scrape_error IS NOT NULL)").all();
   scanState.phase = 'scraping';
   scanState.done = 0;
   scanState.total = rows.length;

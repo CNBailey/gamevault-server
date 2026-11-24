@@ -89,3 +89,17 @@ test('recognises PS4 patches', async () => {
   assert.equal(isPatch('/g/Hades.pkg', pkg('gd')), false);
   assert.equal(isPatch('/g/Dispatch.exfat', { kind: 'ps5-exfat', pkgs: [] }), false);
 });
+
+test('cleans titles before searching IGDB', async () => {
+  const { searchTitle, searchVariants } = await import('../server/scraper.js');
+  assert.equal(searchTitle('Borderlands®4'), 'Borderlands 4');
+  assert.equal(searchTitle('WATCH_DOGS® 2'), 'WATCH DOGS 2');
+  assert.equal(searchTitle('Aliens: Fireteam Elite (PS5)'), 'Aliens: Fireteam Elite');
+  assert.equal(searchTitle('[PROTOTYPE® BIOHAZARD BUNDLE]'), 'PROTOTYPE BIOHAZARD BUNDLE');
+  assert.equal(searchTitle('LEGO® Star Wars™: The Skywalker Saga'), 'LEGO Star Wars: The Skywalker Saga');
+  assert.equal(searchTitle('Call of Duty®: Vanguard'), 'Call of Duty: Vanguard');
+  assert.deepEqual(searchVariants('Far Cry® 3 Classic Edition'), ['Far Cry 3 Classic Edition', 'Far Cry 3']);
+  assert.deepEqual(searchVariants('God of War® III Remastered'), ['God of War III Remastered', 'God of War III']);
+  assert.ok(searchVariants('PROTOTYPE® BIOHAZARD BUNDLE').includes('PROTOTYPE BIOHAZARD'));
+  assert.deepEqual(searchVariants('Watch Dogs®: Legion'), ['Watch Dogs: Legion', 'Watch Dogs']);
+});
