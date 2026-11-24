@@ -207,3 +207,25 @@ test('exact match through GarlicSaves concept number, with fallbacks', async () 
     globalThis.fetch = realFetch;
   }
 });
+
+test('recognises homebrew apps and skips their lookups', async () => {
+  const { db, isAppRow } = await import('../server/db.js');
+  const { scrapeGame } = await import('../server/scraper.js');
+  assert.equal(isAppRow({ title_id: 'PPSA99420', platform: 'PS5' }), true);
+  assert.equal(isAppRow({ title_id: 'CUSA99999', platform: 'PS4' }), true);
+  assert.equal(isAppRow({ title_id: 'LAPY10010', platform: 'PS4' }), true);
+  assert.equal(isAppRow({ title_id: 'PPSA01649', platform: 'PS5', kind: 'ps5-exfat', category: '0' }), false);
+  assert.equal(isAppRow({ title_id: 'PPSA01649', platform: 'PS5', kind: 'ps5-exfat', category: '65536' }), true);
+  assert.equal(isAppRow({ title_id: 'CUSA05332', platform: 'PS4', kind: 'ps4-pkg', category: 'gd' }), false);
+  const realFetch = globalThis.fetch;
+  let called = false;
+  globalThis.fetch = async () => { called = true; return new Response('[]'); };
+  try {
+    const id = Number(db.prepare("INSERT INTO games (path, kind, platform, title_id, local_title, added_at) VALUES ('/g/kodi.exfat', 'ps5-exfat', 'PS5', 'PPSA99420', 'PS5MC (Kodi 22)', datetime())").run().lastInsertRowid);
+    await scrapeGame(id);
+    assert.equal(called, false, 'no network lookups for apps');
+    assert.equal(db.prepare('SELECT match_status FROM games WHERE id = ?').get(id).match_status, 'app');
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});

@@ -88,9 +88,11 @@ export default async function api(app) {
 
   // ---- Games ---------------------------------------------------------------
   app.get('/games', async (req) => {
-    const { platform, genre, q, fav, sort = 'title', status, includeMissing } = req.query;
+    const { platform, genre, q, fav, sort = 'title', status, includeMissing, apps = 'show' } = req.query;
     let games = db.prepare('SELECT * FROM games').all().map((r) => rowToGame(r));
     if (!includeMissing) games = games.filter((g) => !g.missing);
+    if (apps === 'hide') games = games.filter((g) => !g.isApp);
+    if (apps === 'only') games = games.filter((g) => g.isApp);
     if (platform && platform !== 'All') games = games.filter((g) => g.platform === platform.toUpperCase());
     if (genre && genre !== 'All') games = games.filter((g) => g.genres.includes(genre));
     if (fav === '1' || fav === 'true') games = games.filter((g) => g.favourite);
@@ -236,7 +238,8 @@ export default async function api(app) {
 
   app.get('/review', async () => {
     return db.prepare("SELECT * FROM games WHERE missing = 0 AND match_status IN ('review', 'unmatched') ORDER BY local_title")
-      .all().map((r) => ({ ...rowToGame(r, { full: true }), folder: path.basename(r.path) }));
+      .all().map((r) => ({ ...rowToGame(r, { full: true }), folder: path.basename(r.path) }))
+      .filter((g) => !g.isApp);
   });
 
   app.post('/maintenance/purge-missing', async () => ({ removed: await purgeMissing() }));

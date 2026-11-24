@@ -104,6 +104,8 @@ if (process.argv[1] && import.meta.url === new URL(`file://${path.resolve(proces
   ps5Exfat(path.join(out, 'PS5', 'PPSA16716-The Smurfs 2 - The Prisoner of the Gree (v01.000.000).exfat'), { title: 'The Smurfs 2 - The Prisoner of the Green Stone', titleId: 'PPSA16716' });
   // Not a real image: details must come from the file name.
   write(path.join(out, 'PS5', 'PPSA01864-LEGO® Star Wars™ The Skywalker Saga (v01.010.000).exfat'), Buffer.alloc(256 * 1024));
+  // Homebrew app (name-only image)
+  write(path.join(out, 'PS5', 'PPSA99420-PS5MC (Kodi 22) (v01.000.000).exfat'), Buffer.alloc(128 * 1024));
   write(path.join(out, 'PS5', '@eaDir', 'junk'), Buffer.from('synology thumbnail cache'));
 
   write(path.join(out, 'PS4', 'Bloodborne', 'Bloodborne_CUSA00001.pkg'), buildPkg({ title: 'Bloodborne™', titleId: 'CUSA00001' }));

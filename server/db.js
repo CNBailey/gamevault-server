@@ -116,6 +116,18 @@ export function setSetting(key, value) {
 
 const JSON_COLS = ['genres', 'modes', 'screenshots', 'videos', 'pkgs'];
 
+/**
+ * Homebrew apps rather than games: a title ID outside the normal CUSA/PPSA ranges
+ * (homebrew uses PPSA99xxx / CUSA99xxx or its own prefixes), or a PS5 title whose
+ * param.json marks it as an application rather than a game.
+ */
+export function isAppRow(row) {
+  const id = String(row.title_id || '').toUpperCase();
+  if (id && (!/^(CUSA|PPSA)\d{5}$/.test(id) || /^(CUSA|PPSA)99\d{3}$/.test(id))) return true;
+  if (row.platform === 'PS5' && row.kind !== 'ps4-pkg' && row.category != null && row.category !== '' && row.category !== '0') return true;
+  return false;
+}
+
 /** Turns a games row into the shape the API returns. */
 export function rowToGame(row, { full = false } = {}) {
   if (!row) return null;
@@ -124,6 +136,7 @@ export function rowToGame(row, { full = false } = {}) {
     try { parsed[c] = row[c] ? JSON.parse(row[c]) : []; } catch { parsed[c] = []; }
   }
   const cover = row.cover || row.local_icon || null;
+  const isApp = isAppRow(row);
   const game = {
     id: row.id,
     title: row.title || row.local_title || path.basename(row.path),
@@ -140,7 +153,8 @@ export function rowToGame(row, { full = false } = {}) {
     contentId: row.content_id,
     version: row.version,
     releaseDate: row.release_date,
-    matchStatus: row.match_status,
+    matchStatus: isApp ? 'app' : row.match_status,
+    isApp,
     missing: !!row.missing
   };
   if (!full) return game;

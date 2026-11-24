@@ -18,9 +18,10 @@ export default function Library({ search, scanVersion }) {
   const [platform, setPlatform] = useState(saved.platform || 'All');
   const [genre, setGenre] = useState(saved.genre || 'All');
   const [favOnly, setFavOnly] = useState(!!saved.favOnly);
+  const [hideApps, setHideApps] = useState(saved.hideApps !== false);
   const [sort, setSort] = useState(saved.sort || 'title');
 
-  useEffect(() => { store('filters.v2', { platform, genre, favOnly, sort }); }, [platform, genre, favOnly, sort]);
+  useEffect(() => { store('filters.v2', { platform, genre, favOnly, sort, hideApps }); }, [platform, genre, favOnly, sort, hideApps]);
 
   useEffect(() => {
     api.games({ sort }).then((d) => { setGames(d.games); setError(''); }).catch((e) => setError(e.message));
@@ -35,11 +36,11 @@ export default function Library({ search, scanVersion }) {
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (games || []).filter((g) =>
-      (platform === 'All' || g.platform === platform) &&
+      (platform === 'Apps' ? g.isApp : (!hideApps || !g.isApp) && (platform === 'All' || g.platform === platform)) &&
       (genre === 'All' || g.genres.includes(genre)) &&
       (!favOnly || g.favourite) &&
       (!q || g.title.toLowerCase().includes(q)));
-  }, [games, platform, genre, favOnly, search]);
+  }, [games, platform, genre, favOnly, search, hideApps]);
 
   async function toggleFav(g) {
     const next = !g.favourite;
@@ -54,7 +55,9 @@ export default function Library({ search, scanVersion }) {
       <div className="page-head">
         <div>
           <h1>Library</h1>
-          <p className="muted">{games ? `Showing ${visible.length} of ${games.length} games` : 'Loading…'}</p>
+          <p className="muted">{!games ? 'Loading…' : platform === 'Apps'
+            ? `Showing ${visible.length} of ${games.filter((g) => g.isApp).length} apps`
+            : `Showing ${visible.length} of ${games.filter((g) => !g.isApp || !hideApps).length} ${hideApps ? 'games' : 'games and apps'}`}</p>
         </div>
         <label className="sort">Sort by
           <select className="select" value={sort} onChange={(e) => setSort(e.target.value)}>
@@ -65,7 +68,7 @@ export default function Library({ search, scanVersion }) {
 
       <div className="filters">
         <div role="group" aria-label="Platform" className="segmented">
-          {['All', 'PS5', 'PS4'].map((p) => (
+          {['All', 'PS5', 'PS4', ...((games || []).some((g) => g.isApp) ? ['Apps'] : [])].map((p) => (
             <button key={p} aria-pressed={platform === p} onClick={() => setPlatform(p)}>{p}</button>
           ))}
         </div>
@@ -75,6 +78,12 @@ export default function Library({ search, scanVersion }) {
             <button key={c} className="chip" aria-pressed={genre === c} onClick={() => setGenre(c)}>{c}</button>
           ))}
         </div>
+        {(games || []).some((g) => g.isApp) && platform !== 'Apps' && (
+          <label className="row gap-8 small hide-apps">
+            <input type="checkbox" className="switch" checked={hideApps} onChange={(e) => setHideApps(e.target.checked)} />
+            Hide apps
+          </label>
+        )}
         <button className="fav-toggle" aria-pressed={favOnly} onClick={() => setFavOnly(!favOnly)}>
           <StarIcon filled={favOnly} size={16} stroke="#F5B841" /> Favourites only
         </button>
@@ -100,12 +109,12 @@ export default function Library({ search, scanVersion }) {
           <div className="tile" key={g.id}>
             <a href={`#/game/${g.id}`} className="tile-link">
               <Poster src={g.cover} title={g.title}>
-                <span className="tile-badge"><PlatformBadge platform={g.platform} /></span>
+                <span className="tile-badge"><PlatformBadge platform={g.platform} />{g.isApp && <span className="tag tag-app">APP</span>}</span>
               </Poster>
               <div className="tile-meta">
                 <div className="tile-title">{g.title}</div>
                 <div className="tile-sub">
-                  <span>{[g.year, g.genres[0]].filter(Boolean).join(' · ') || (g.matchStatus === 'pending' ? 'Details pending' : '—')}</span>
+                  <span>{g.isApp ? 'Homebrew app' : [g.year, g.genres[0]].filter(Boolean).join(' · ') || (g.matchStatus === 'pending' ? 'Details pending' : '—')}</span>
                   {(g.criticScore ?? g.userScore) != null && <span className="score">{g.criticScore ?? g.userScore}</span>}
                 </div>
               </div>

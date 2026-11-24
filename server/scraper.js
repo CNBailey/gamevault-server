@@ -1,5 +1,5 @@
 import { config } from './config.js';
-import { db, getSetting } from './db.js';
+import { db, getSetting, isAppRow } from './db.js';
 import { clearScraped, download } from './media.js';
 import { scanState } from './scanner.js';
 import { lookupTitleId } from './garlicsaves.js';
@@ -231,8 +231,13 @@ async function applyIgdb(gameId, g, status, score) {
 
 /** Automatic match: >= 0.85 matched, >= 0.55 kept but flagged for review, else unmatched. */
 export async function scrapeGame(gameId) {
-  const row = db.prepare('SELECT id, local_title, platform, path, title_id FROM games WHERE id = ?').get(gameId);
+  const row = db.prepare('SELECT id, local_title, platform, path, title_id, kind, category FROM games WHERE id = ?').get(gameId);
   if (!row) return;
+  // Homebrew apps are not on IGDB: don't look them up.
+  if (isAppRow(row)) {
+    db.prepare("UPDATE games SET match_status = 'app', scraped_at = ?, scrape_error = NULL WHERE id = ?").run(new Date().toISOString(), gameId);
+    return;
+  }
   const title = row.local_title || row.path.split(/[\\/]/).pop();
   try {
     // A game you matched by hand before (same title ID) is matched the same way again.

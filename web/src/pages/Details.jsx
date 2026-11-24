@@ -7,6 +7,7 @@ import { Icon, PlatformBadge, PlayIcon, StarIcon } from '../components/Icons.jsx
 const KIND = { 'ps5-exfat': 'PS5 exFAT image', 'ps5-folder': 'PS5 folder dump', 'ps4-folder': 'PS4 folder dump', 'ps4-pkg': 'PS4 PKG' };
 const PART = { gd: 'Game', gp: 'Update', ac: 'Add-on', image: 'Game image' };
 const STATUS = {
+  app: ['#8FB0FF', 'Homebrew app: not looked up on IGDB'],
   exact: ['#3FCF8E', 'Exact match by PlayStation title ID (via GarlicSaves)'],
   matched: ['#3FCF8E', 'Matched on IGDB by name'],
   manual: ['#3FCF8E', 'Matched on IGDB (chosen by you, remembered by title ID)'],
@@ -77,6 +78,7 @@ export default function Details({ id, scanVersion }) {
               <div className="row gap-8 wrap">
                 <PlatformBadge platform={game.platform} large />
                 {game.genres.map((g) => <span key={g} className="tag">{g}</span>)}
+                {game.isApp && <span className="tag tag-app">Homebrew app</span>}
                 {game.missing && <span className="tag tag-warn">Missing from disk</span>}
               </div>
               <h1 className="hero-title">{game.title}</h1>

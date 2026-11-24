@@ -50,7 +50,9 @@ Matching, in order:
 1. **A match you fixed by hand** before, remembered by title ID (CUSA…/PPSA…) and reused when that game is re-dumped, updated, renamed or converted.
 2. **Exact match via [GarlicSaves](https://garlicsaves.com/tools/title-lookup)** (on by default; switch it off in Settings → Metadata & media). The title ID gives the official name and the PlayStation Store concept number, which IGDB stores too. Each ID is looked up once and cached, at most one request per second.
 3. **Name search** on IGDB, using the official name from GarlicSaves when there is one (else the title inside the dump, else the file name), with ®/™ symbols, `(PS5)` tags and edition words cleaned out.
-4. **Fix match** by hand. Uncertain matches appear under **Needs review**. **Fix match** on any game lets you search IGDB yourself.
+4. **Fix match** by hand.
+
+**Homebrew apps** (title IDs in the `PPSA99xxx`/`CUSA99xxx` range or outside CUSA/PPSA, or PS5 titles marked as applications) are not looked up and stay out of Needs review. The library hides them by default; untick **Hide apps**, or pick **Apps** next to All / PS5 / PS4. Uncertain matches appear under **Needs review**. **Fix match** on any game lets you search IGDB yourself.
 
 ## Conversion service
 
@@ -79,7 +81,7 @@ Base URL: `http://<nas-ip>:8686/api/v1`. All responses are JSON unless noted.
 | Method & path | What it does |
 |---|---|
 | `GET /health` | Version and game count |
-| `GET /games?platform=PS5&genre=RPG&q=astro&fav=1&sort=title\|added\|released\|rating\|size` | List games (default: title) |
+| `GET /games?platform=PS5&genre=RPG&q=astro&fav=1&sort=title\|added\|released\|rating\|size&apps=show\|hide\|only` | List games (default: title order, apps included; each has `isApp`) |
 | `GET /games/{id}` | Full details |
 | `PUT /games/{id}/favourite` `{"favourite": true}` | Set favourite (no body = toggle) |
 | `GET /games/{id}/files` | Files making up the game, with sizes and download URLs |
