@@ -182,6 +182,25 @@ export async function findByTitleId(titleId, localTitle) {
   return ranked[0] && ranked[0].s >= 0.5 ? ranked[0].g : null;
 }
 
+/**
+ * Diagnostics: shows IGDB's raw answers for a title ID and for one matched game's store
+ * links, so the title-ID lookup can be checked against real data.
+ */
+export async function titleIdDiagnostics(titleId, igdbId) {
+  const out = { titleId, igdbId };
+  const run = async (key, endpoint, q) => {
+    try { out[key] = { query: q, result: await igdb(endpoint, q) }; } catch (err) { out[key] = { query: q, error: err.message }; }
+  };
+  const tid = String(titleId || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (tid) {
+    await run('lookupUsedByGameVault', 'external_games', `fields game,uid,url; where uid ~ *"${tid}"* | url ~ *"${tid}"*; limit 20;`);
+    await run('uidOnly', 'external_games', `fields game,uid,url; where uid ~ *"${tid}"*; limit 20;`);
+    await run('urlOnly', 'external_games', `fields game,uid,url; where url ~ *"${tid}"*; limit 20;`);
+  }
+  if (igdbId) await run('storeLinksForMatchedGame', 'external_games', `fields *; where game = ${Number(igdbId)}; limit 50;`);
+  return out;
+}
+
 export async function getIgdbGame(igdbId) {
   const rows = await igdb('games', `fields ${FIELDS}; where id = ${Number(igdbId)};`);
   return rows[0] || null;

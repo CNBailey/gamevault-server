@@ -7,7 +7,7 @@ import { resolveInside, walkFiles } from '../files.js';
 import { badgesDir, defaultBadgesDir } from '../media.js';
 import { runScan, scheduleScans } from '../jobs.js';
 import { purgeMissing, scanState } from '../scanner.js';
-import { candidateSummary, matchGame, resetToken, scrapeGame, scraperConfigured, searchIgdb } from '../scraper.js';
+import { candidateSummary, matchGame, resetToken, scrapeGame, scraperConfigured, searchIgdb, titleIdDiagnostics } from '../scraper.js';
 
 const SORTS = {
   added: (a, b) => (b.addedAt || '').localeCompare(a.addedAt || ''),
@@ -234,6 +234,14 @@ export default async function api(app) {
   app.get('/review', async () => {
     return db.prepare("SELECT * FROM games WHERE missing = 0 AND match_status IN ('review', 'unmatched') ORDER BY local_title")
       .all().map((r) => ({ ...rowToGame(r, { full: true }), folder: path.basename(r.path) }));
+  });
+
+  // Shows IGDB's raw answers for a game's title ID (no credentials are included in the output).
+  app.get('/diagnostics/title-id/:id', async (req, reply) => {
+    const row = getRow(req.params.id);
+    if (!row) return notFound(reply);
+    if (!scraperConfigured()) return reply.code(400).send({ error: 'IGDB is not set up' });
+    return { game: row.local_title, ...(await titleIdDiagnostics(row.title_id, row.igdb_id)) };
   });
 
   app.post('/maintenance/purge-missing', async () => ({ removed: await purgeMissing() }));
