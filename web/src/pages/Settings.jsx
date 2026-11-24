@@ -81,7 +81,7 @@ export default function Settings({ scan }) {
 
           <section className="card" aria-labelledby="h-libs">
             <h2 id="h-libs">Library folders</h2>
-            <p className="muted small">Each sub-folder is one game. PS4 folders are read for .pkg files, PS5 folders as exFAT dumps. Paths are as seen inside the container (see docker-compose.yml).</p>
+            <p className="muted small">Each .exfat image, .pkg file or game folder is one game; PKG updates and DLC in the same folder are grouped with their game. Paths are as seen inside the container (see docker-compose.yml).</p>
             <div className="table-wrap">
               <table className="table">
                 <thead><tr><th>Folder</th><th>Type</th><th>Games</th><th>Last scan</th><th>Enabled</th><th><span className="sr-only">Actions</span></th></tr></thead>

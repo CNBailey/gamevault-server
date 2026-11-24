@@ -2,8 +2,8 @@
 
 A self-hosted catalogue for PlayStation game dumps, served as a web page from your NAS. It works like Ember Media Manager does for movies.
 
-- Scans **PS4 `.pkg`** files (base game + updates + DLC grouped per folder) and **PS5 folder dumps** (`sce_sys/param.json`)
-- Reads title, title ID, content ID and version straight from the dumps, plus their own icon
+- Scans **PS5 `.exfat` game images**, **PS4 `.pkg`** files (base game + updates + DLC grouped per folder) and unpacked PS4/PS5 folder dumps
+- Reads title, title ID, content ID and version straight from the dumps (including from inside `.exfat` images, without mounting them), plus their own icon
 - Looks every game up on **IGDB**: poster, backdrop, screenshots, trailer, summary, release year, genres, developer and publisher, critic and user scores
 - Library page with PS5/PS4 filter, categories, title search, favourites and sorting
 - Details page with the scraped info plus size, file count, dates and path
@@ -32,6 +32,7 @@ Each library folder is searched up to 4 levels deep. A game is:
 
 | On disk | Detected as |
 |---|---|
+| `PPSA12345-Name (v01.000.000).exfat` (+ optional `.exfat.ps5-archive.json`) | PS5 exFAT image; details read from `sce_sys/param.json` inside the image, then the JSON beside it, then the file name |
 | `Some Game/sce_sys/param.json` | PS5 folder dump |
 | `Some Game/sce_sys/param.sfo` | PS4 folder dump |
 | `Some Game/*.pkg` (any `.pkg` up to 2 levels inside) | PS4 PKG game; the base game, updates and DLC are grouped together |

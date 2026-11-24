@@ -2,7 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { db } from './db.js';
 import { readPkg } from './parsers/pkg.js';
-import { readPs4Folder, readPs5Folder } from './parsers/ps5.js';
+import { readPs4Folder, readPs5Exfat, readPs5Folder } from './parsers/ps5.js';
+import { readExfatGame } from './parsers/exfat.js';
 import { isIgnored, walkFiles } from './files.js';
 import { copyInto, saveBuffer, removeGameMedia } from './media.js';
 
@@ -57,8 +58,11 @@ async function findCandidates(root, depth = 0) {
   for (const e of entries) {
     if (isIgnored(e.name)) continue;
     const full = path.join(root, e.name);
-    if (e.isFile() && e.name.toLowerCase().endsWith('.pkg')) {
+    const lower = e.name.toLowerCase();
+    if (e.isFile() && lower.endsWith('.pkg')) {
       out.push({ type: 'pkgfile', path: full });
+    } else if (e.isFile() && lower.endsWith('.exfat')) {
+      out.push({ type: 'exfat', path: full });
     } else if (e.isDirectory()) {
       if (await hasFile(path.join(full, 'sce_sys', 'param.json')) || await hasFile(path.join(full, 'sce_sys', 'param.sfo'))) {
         out.push({ type: 'folder', path: full });
@@ -78,19 +82,36 @@ async function findCandidates(root, depth = 0) {
 /** "Astro_Bot [PPSA01325] v1.02" -> "Astro Bot" */
 export function cleanName(name) {
   return name
-    .replace(/\.pkg$/i, '')
+    .replace(/\.(pkg|exfat)$/i, '')
     .replace(/[[(][^\])]*[\])]/g, ' ')
     .replace(/\b(CUSA|PPSA)\d{5}\b/gi, ' ')
     .replace(/\b[A-Z]{2}\d{4}-[A-Z]{4}\d{5}_\d{2}-[A-Z0-9]{16}\b/g, ' ')
     .replace(/\bv?\d+\.\d+(\.\d+)?\b/gi, ' ')
     .replace(/\b(update|patch|backport|fake|dlc|ps4|ps5|base|game)\b/gi, ' ')
     .replace(/[_.]+/g, ' ')
-    .replace(/\s+-\s*$/, '')
+    .replace(/^[\s\-_]+|[\s\-_]+$/g, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
 
 async function inspect(candidate, libraryPlatform) {
+  if (candidate.type === 'exfat') {
+    const st = await fs.stat(candidate.path);
+    const meta = await readPs5Exfat(candidate.path, readExfatGame);
+    const sidecar = await fs.stat(`${candidate.path}.ps5-archive.json`).catch(() => null);
+    const name = path.basename(candidate.path);
+    return {
+      ...meta,
+      title: meta.title || cleanName(name),
+      sizeBytes: st.size + (sidecar ? sidecar.size : 0),
+      fileCount: sidecar ? 2 : 1,
+      modifiedAt: st.mtime.toISOString(),
+      pkgs: [
+        { path: name, size: st.size, category: 'image', version: meta.version },
+        ...(sidecar ? [{ path: `${name}.ps5-archive.json`, size: sidecar.size, category: 'info', version: null }] : [])
+      ]
+    };
+  }
   if (candidate.type === 'folder') {
     const meta = (await readPs5Folder(candidate.path)) || (await readPs4Folder(candidate.path));
     const files = await walkFiles(candidate.path);

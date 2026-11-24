@@ -26,7 +26,7 @@ function getRow(id) {
 
 /** Files that make up a game, relative to its root, for clients that download it. */
 async function gameFiles(row) {
-  if (row.kind === 'ps4-pkg') {
+  if (row.kind === 'ps4-pkg' || row.kind === 'ps5-exfat') {
     const pkgs = JSON.parse(row.pkgs || '[]');
     return pkgs.map((p) => ({ path: p.path, size: p.size, category: p.category, version: p.version }));
   }
@@ -34,8 +34,8 @@ async function gameFiles(row) {
 }
 
 function gameRoot(row) {
-  // A loose .pkg is stored by its file path; its "root" is the folder it sits in.
-  return row.kind === 'ps4-pkg' && row.path.toLowerCase().endsWith('.pkg') ? path.dirname(row.path) : row.path;
+  // A loose .pkg or an .exfat image is stored by its file path; its "root" is the folder it sits in.
+  return /\.(pkg|exfat)$/i.test(row.path) ? path.dirname(row.path) : row.path;
 }
 
 async function sendFileWithRange(req, reply, file) {
@@ -159,7 +159,7 @@ export default async function api(app) {
     const root = gameRoot(row);
     const file = await resolveInside(root, req.params['*']);
     if (!file) return notFound(reply, 'File');
-    if (row.kind === 'ps4-pkg') {
+    if (row.kind === 'ps4-pkg' || row.kind === 'ps5-exfat') {
       const allowed = new Set(JSON.parse(row.pkgs || '[]').map((p) => path.resolve(root, p.path)));
       if (!allowed.has(file)) return notFound(reply, 'File');
     }

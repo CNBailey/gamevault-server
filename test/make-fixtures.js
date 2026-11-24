@@ -2,6 +2,8 @@
 // Usage: node test/make-fixtures.js [outDir]   (default ./.fixtures)
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { addToExfat } from './exfat-image.js';
 
 const out = path.resolve(process.argv[2] || '.fixtures');
 
@@ -73,11 +75,36 @@ function ps5Dump(dir, { title, titleId, version = '01.000.000' }) {
   write(path.join(dir, 'data', 'level1.dat'), Buffer.alloc(512 * 1024, 1));
 }
 
+/** A PS5 .exfat game image; falls back to an unreadable blob when mkfs.exfat is missing. */
+export function ps5Exfat(file, { title, titleId, version = '01.000.000', sidecar = null }) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.rmSync(file, { force: true });
+  try {
+    fs.writeFileSync(file, Buffer.alloc(0));
+    fs.truncateSync(file, 16 * 1024 * 1024);
+    execFileSync('mkfs.exfat', ['-q', file], { stdio: 'ignore' });
+    addToExfat(file, {
+      sce_sys: {
+        'param.json': JSON.stringify({ titleId, contentId: `EP9000-${titleId}_00-${'0'.repeat(16)}`, contentVersion: version, localizedParameters: { defaultLanguage: 'en-US', 'en-US': { titleName: title } } }),
+        'icon0.png': PNG
+      },
+      'eboot.bin': Buffer.alloc(64 * 1024, 7)
+    });
+  } catch {
+    fs.writeFileSync(file, Buffer.alloc(1024 * 1024));
+  }
+  if (sidecar) fs.writeFileSync(`${file}.ps5-archive.json`, JSON.stringify(sidecar, null, 2));
+}
+
 if (process.argv[1] && import.meta.url === new URL(`file://${path.resolve(process.argv[1])}`).href) {
   fs.rmSync(out, { recursive: true, force: true });
   ps5Dump(path.join(out, 'PS5', 'Astro Bot'), { title: 'ASTRO BOT', titleId: 'PPSA00001' });
   ps5Dump(path.join(out, 'PS5', 'Returnal [PPSA00002]'), { title: 'Returnal™', titleId: 'PPSA00002' });
   ps5Dump(path.join(out, 'PS5', 'Shooters', 'dump_0412'), { title: '', titleId: 'PPSA00003' });
+  ps5Exfat(path.join(out, 'PS5', 'PPSA22453-Tomb Raider Legend (v01.000.004).exfat'), { title: 'Tomb Raider: Legend', titleId: 'PPSA22453', version: '01.000.004', sidecar: { titleId: 'PPSA22453', version: '01.000.004' } });
+  ps5Exfat(path.join(out, 'PS5', 'PPSA16716-The Smurfs 2 - The Prisoner of the Gree (v01.000.000).exfat'), { title: 'The Smurfs 2 - The Prisoner of the Green Stone', titleId: 'PPSA16716' });
+  // Not a real image: details must come from the file name.
+  write(path.join(out, 'PS5', 'PPSA01864-LEGO® Star Wars™ The Skywalker Saga (v01.010.000).exfat'), Buffer.alloc(256 * 1024));
   write(path.join(out, 'PS5', '@eaDir', 'junk'), Buffer.from('synology thumbnail cache'));
 
   write(path.join(out, 'PS4', 'Bloodborne', 'Bloodborne_CUSA00001.pkg'), buildPkg({ title: 'Bloodborne™', titleId: 'CUSA00001' }));

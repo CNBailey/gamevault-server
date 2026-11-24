@@ -4,7 +4,8 @@ import Poster from '../components/Poster.jsx';
 import FixMatch from '../components/FixMatch.jsx';
 import { Icon, PlatformBadge, PlayIcon, StarIcon } from '../components/Icons.jsx';
 
-const KIND = { 'ps5-folder': 'PS5 folder dump (exFAT)', 'ps4-folder': 'PS4 folder dump', 'ps4-pkg': 'PS4 PKG' };
+const KIND = { 'ps5-exfat': 'PS5 exFAT image', 'ps5-folder': 'PS5 folder dump', 'ps4-folder': 'PS4 folder dump', 'ps4-pkg': 'PS4 PKG' };
+const PART = { gd: 'Game', gp: 'Update', ac: 'Add-on', image: 'Game image', info: 'Info file' };
 const STATUS = {
   matched: ['#3FCF8E', 'Matched on IGDB'],
   manual: ['#3FCF8E', 'Matched on IGDB (chosen by you)'],
@@ -172,7 +173,7 @@ export default function Details({ id, scanVersion }) {
             {game.pkgs?.length > 1 && (
               <ul className="pkg-list">
                 {game.pkgs.map((p) => (
-                  <li key={p.path}><span className="mono small">{p.path}</span><span className="muted small">{({ gd: 'Game', gp: 'Update', ac: 'Add-on' })[p.category] || p.category || 'PKG'} {p.version ? `v${p.version}` : ''} · {formatBytes(p.size)}</span></li>
+                  <li key={p.path}><span className="mono small">{p.path}</span><span className="muted small">{PART[p.category] || p.category || 'PKG'} {p.version ? `v${p.version}` : ''} · {formatBytes(p.size)}</span></li>
                 ))}
               </ul>
             )}
