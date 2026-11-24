@@ -3,6 +3,8 @@ import Header from './components/Header.jsx';
 import Library from './pages/Library.jsx';
 import Details from './pages/Details.jsx';
 import Settings from './pages/Settings.jsx';
+import Conversions from './pages/Conversions.jsx';
+import { api } from './api.js';
 import { useScan } from './hooks.js';
 
 function useHashRoute() {
@@ -20,6 +22,18 @@ export default function App() {
   const route = useHashRoute();
   const scan = useScan();
   const [search, setSearch] = useState('');
+  const [conv, setConv] = useState(null);
+
+  // Whether the conversion service is on (shows the Conversions tab) and how busy it is.
+  const refreshConv = () => api.conversions().then((c) => setConv({
+    enabled: c.enabled,
+    busy: c.active.length + c.queued.length + c.waiting.length
+  })).catch(() => {});
+  useEffect(() => {
+    refreshConv();
+    const t = setInterval(refreshConv, 15000);
+    return () => clearInterval(t);
+  }, []);
 
   let page;
   let section = 'library';
@@ -28,14 +42,17 @@ export default function App() {
     page = <Details id={Number(game[1])} scanVersion={scan.version} />;
   } else if (route.startsWith('/settings')) {
     section = 'settings';
-    page = <Settings scan={scan} />;
+    page = <Settings scan={scan} onConversionChange={refreshConv} />;
+  } else if (route.startsWith('/conversions')) {
+    section = 'conversions';
+    page = <Conversions onChange={refreshConv} />;
   } else {
     page = <Library search={search} scanVersion={scan.version} />;
   }
 
   return (
     <>
-      <Header section={section} search={search} onSearch={setSearch} showSearch={section === 'library' && !game} scan={scan} />
+      <Header section={section} search={search} onSearch={setSearch} showSearch={section === 'library' && !game} scan={scan} conv={conv} />
       {page}
     </>
   );

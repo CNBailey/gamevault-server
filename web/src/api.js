@@ -28,7 +28,17 @@ export const api = {
   review: () => request(`${base}/review`),
   settings: () => request(`${base}/settings`),
   saveSettings: (s) => request(`${base}/settings`, { method: 'PUT', body: s }),
-  purgeMissing: () => request(`${base}/maintenance/purge-missing`, { method: 'POST' })
+  purgeMissing: () => request(`${base}/maintenance/purge-missing`, { method: 'POST' }),
+  conversions: () => request(`${base}/conversions`),
+  conversionSettings: (s) => request(`${base}/conversions/settings`, { method: 'PUT', body: s }),
+  checkConversions: () => request(`${base}/conversions/check`, { method: 'POST' }),
+  cancelConversion: (id) => request(`${base}/conversions/${id}/cancel`, { method: 'POST' }),
+  retryConversion: (id) => request(`${base}/conversions/${id}/retry`, { method: 'POST' }),
+  removeConversion: (id) => request(`${base}/conversions/${id}`, { method: 'DELETE' }),
+  clearConversionHistory: () => request(`${base}/conversions/clear-history`, { method: 'POST' }),
+  emptyDone: () => request(`${base}/conversions/empty-done`, { method: 'POST', body: { confirm: true } }),
+  renamePreview: (platform) => request(`${base}/maintenance/rename-preview?platform=${platform}`),
+  applyRenames: (platform, paths) => request(`${base}/maintenance/rename`, { method: 'POST', body: { platform, paths } })
 };
 
 export function formatBytes(n) {

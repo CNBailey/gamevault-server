@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 /** Folders and files that NAS systems create and that are never part of a game. */
-export const IGNORED = new Set(['@eaDir', '#recycle', '#snapshot', '.DS_Store', 'Thumbs.db', 'desktop.ini', '$RECYCLE.BIN', 'System Volume Information', '.gamevault']);
+export const IGNORED = new Set(['@eaDir', '#recycle', '#snapshot', '.DS_Store', 'Thumbs.db', 'desktop.ini', '$RECYCLE.BIN', 'System Volume Information', '.gamevault', '_incoming', '_done', '_work']);
 
 export function isIgnored(name) {
   return IGNORED.has(name) || name.startsWith('._') || name.startsWith('.');

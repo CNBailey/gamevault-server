@@ -64,6 +64,28 @@ CREATE TABLE IF NOT EXISTS games (
 CREATE INDEX IF NOT EXISTS games_platform ON games(platform);
 CREATE INDEX IF NOT EXISTS games_status ON games(match_status);
 
+CREATE TABLE IF NOT EXISTS conversions (
+  id INTEGER PRIMARY KEY,
+  platform TEXT NOT NULL,          -- PS4 | PS5
+  source TEXT NOT NULL,            -- full path in the incoming folder
+  source_name TEXT NOT NULL,
+  fingerprint TEXT,                -- size/mtime of the source when queued
+  status TEXT NOT NULL,            -- queued | running | done | failed
+  action TEXT,                     -- rename | convert | publish
+  stage TEXT,
+  progress REAL,
+  message TEXT,
+  output TEXT,                     -- library file written
+  title_id TEXT,
+  title TEXT,
+  version TEXT,
+  size_bytes INTEGER,
+  created_at TEXT NOT NULL,
+  started_at TEXT,
+  finished_at TEXT
+);
+CREATE INDEX IF NOT EXISTS conversions_status ON conversions(status);
+
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT

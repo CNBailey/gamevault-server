@@ -129,3 +129,18 @@ test('matches by PlayStation title ID through IGDB store links', async () => {
     globalThis.fetch = realFetch;
   }
 });
+
+test('library file names', async () => {
+  const { libraryName, uniqueName } = await import('../server/convert/names.js');
+  assert.equal(libraryName({ titleId: 'PPSA01417', title: "Marvel's Spider-Man: Miles Morales", version: '01.015.001', ext: '.exfat' }),
+    "PPSA01417-Marvel's Spider-Man  Miles Morales (v01.015.001).exfat".replace('  ', ' '));
+  assert.equal(libraryName({ titleId: 'CUSA00021', title: 'WATCH_DOGS™', version: '01.09', suffix: ' patch', ext: '.pkg', maxStemBytes: 150 }),
+    'CUSA00021-WATCH_DOGS (v01.09) patch.pkg');
+  const long = libraryName({ titleId: 'PPSA16716', title: 'The Smurfs 2 - The Prisoner of the Green Stone', version: '01.000.000', ext: '.exfat' });
+  assert.ok(Buffer.byteLength(long.replace(/\.exfat$/, '')) <= 63, long);
+  assert.ok(long.endsWith(' (v01.000.000).exfat') && long.startsWith('PPSA16716-The Smurfs 2'));
+  assert.equal(libraryName({ titleId: 'PPSA01556', title: 'Resident Evil Village', version: 'unknown', ext: '.exfat' }), 'PPSA01556-Resident Evil Village.exfat');
+  assert.equal(libraryName({ titleId: 'PPSA00001', title: 'A/B: C*D?', version: '01.000.000', ext: '.exfat' }), 'PPSA00001-A B C D (v01.000.000).exfat');
+  assert.throws(() => libraryName({ titleId: 'nope', title: 'x', ext: '.pkg' }));
+  assert.equal(uniqueName('a.exfat', (n) => n === 'a.exfat'), 'a (2).exfat');
+});

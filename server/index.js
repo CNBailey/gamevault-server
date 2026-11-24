@@ -7,6 +7,8 @@ import { db } from './db.js';
 import { runScan, scheduleScans, syncEnvLibraries } from './jobs.js';
 import { badgesDir, defaultBadgesDir, mediaRoot } from './media.js';
 import api from './routes/api.js';
+import convertApi from './routes/convert.js';
+import { startConversionService, stopConversionService } from './convert/service.js';
 
 const app = Fastify({ logger: { level: process.env.GV_LOG_LEVEL || 'info' } });
 
@@ -23,6 +25,7 @@ app.addHook('onRequest', async (req, reply) => {
 });
 
 await app.register(api, { prefix: '/api/v1' });
+await app.register(convertApi, { prefix: '/api/v1' });
 
 await app.register(fastifyStatic, {
   root: mediaRoot,
@@ -57,17 +60,19 @@ app.setNotFoundHandler((req, reply) => {
   return reply.sendFile('index.html', config.webDir);
 });
 
-syncEnvLibraries();
+const librariesMoved = syncEnvLibraries();
 scheduleScans();
 
 await app.listen({ port: config.port, host: config.host });
 
 // First run with an empty catalogue: scan straight away.
 const count = db.prepare('SELECT COUNT(*) AS n FROM games').get().n;
-if (count === 0 && db.prepare('SELECT COUNT(*) AS n FROM libraries').get().n > 0) runScan();
+if ((count === 0 || librariesMoved) && db.prepare('SELECT COUNT(*) AS n FROM libraries').get().n > 0) runScan();
+startConversionService();
 
 for (const sig of ['SIGINT', 'SIGTERM']) {
   process.on(sig, async () => {
+    await stopConversionService();
     await app.close();
     db.close();
     process.exit(0);

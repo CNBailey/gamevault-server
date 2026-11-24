@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { api, formatDate, timeAgo } from '../api.js';
 import FixMatch from '../components/FixMatch.jsx';
+import TidyNames from '../components/TidyNames.jsx';
 
-export default function Settings({ scan }) {
+export default function Settings({ scan, onConversionChange }) {
   const [libs, setLibs] = useState([]);
   const [review, setReview] = useState([]);
   const [settings, setSettings] = useState(null);
@@ -10,6 +11,9 @@ export default function Settings({ scan }) {
   const [newLib, setNewLib] = useState({ path: '', platform: 'PS5' });
   const [msg, setMsg] = useState({});
   const [fixing, setFixing] = useState(null);
+  const [tidy, setTidy] = useState(false);
+  const [conv, setConv] = useState(null);
+  const [settle, setSettle] = useState(60);
 
   async function load() {
     const [l, r, s] = await Promise.all([api.libraries(), api.review(), api.settings()]);
@@ -17,6 +21,17 @@ export default function Settings({ scan }) {
     setReview(r);
     setSettings(s);
     setForm((f) => ({ ...f, igdbClientId: s.igdbClientId, scanIntervalHours: s.scanIntervalHours }));
+    const c = await api.conversions();
+    setConv(c);
+    setSettle(c.settleSeconds);
+  }
+
+  async function saveConversion(patch) {
+    try {
+      setConv(await api.conversionSettings(patch));
+      setMsg({ conv: patch.enabled === true ? 'Conversion service is on.' : patch.enabled === false ? 'Conversion service is off.' : 'Saved.' });
+      onConversionChange?.();
+    } catch (err) { setMsg({ conv: err.message }); }
   }
 
   useEffect(() => { load().catch((e) => setMsg({ page: e.message })); }, [scan.version]);
@@ -116,7 +131,7 @@ export default function Settings({ scan }) {
             </div>
             <form className="row gap-8 wrap add-lib" onSubmit={addLibrary}>
               <label className="grow"><span className="sr-only">Folder path</span>
-                <input className="input" placeholder="/games/ps5" value={newLib.path} onChange={(e) => setNewLib({ ...newLib, path: e.target.value })} />
+                <input className="input" placeholder="/games/PS5" value={newLib.path} onChange={(e) => setNewLib({ ...newLib, path: e.target.value })} />
               </label>
               <label><span className="sr-only">Type</span>
                 <select className="select" value={newLib.platform} onChange={(e) => setNewLib({ ...newLib, platform: e.target.value })}>
@@ -126,6 +141,10 @@ export default function Settings({ scan }) {
               <button className="btn btn-primary">Add folder</button>
             </form>
             {msg.lib && <p className="error small">{msg.lib}</p>}
+            <div className="row gap-10 wrap tidy-row">
+              <button className="btn" onClick={() => setTidy(true)}>Tidy file names…</button>
+              <span className="muted small">Rename PS4/PS5 files to the standard <code>CUSA00021-Title (v01.00).pkg</code> form. You see a preview first.</span>
+            </div>
           </section>
 
           <section className="card" aria-labelledby="h-review">
@@ -176,6 +195,33 @@ export default function Settings({ scan }) {
             </form>
           </section>
 
+          <section className="card" aria-labelledby="h-conv">
+            <h2 id="h-conv">Conversion service</h2>
+            <p className="muted small">Converts PS5 games dropped in the incoming folder to .exfat and renames PS4 .pkg files, then moves them into your library.</p>
+            {conv && (
+              <div className="stack">
+                <label className="row gap-10 strong">
+                  <input type="checkbox" className="switch" checked={conv.enabled} onChange={(e) => saveConversion({ enabled: e.target.checked })} />
+                  {conv.enabled ? 'On' : 'Off'}
+                </label>
+                <dl className="dl">
+                  <dt>PS5 incoming</dt><dd className="mono small">{conv.folders.PS5}</dd>
+                  <dt>PS4 incoming</dt><dd className="mono small">{conv.folders.PS4}</dd>
+                  <dt>Originals</dt><dd className="mono small">{conv.folders.done}</dd>
+                  <dt>Converter</dt><dd className="small">{conv.forge.available ? `PS5 Dump Forge ${conv.forge.version || ''}` : <span className="error">Not available: {conv.forge.error}</span>}</dd>
+                </dl>
+                <label className="field">Wait after a file stops changing (seconds)
+                  <span className="row gap-8">
+                    <input className="input" type="number" min="10" value={settle} onChange={(e) => setSettle(e.target.value)} />
+                    <button className="btn" onClick={() => saveConversion({ settleSeconds: Number(settle) })}>Save</button>
+                  </span>
+                </label>
+                {conv.enabled && <a href="#/conversions">Open the Conversions page →</a>}
+                {msg.conv && <p className="small" role="status">{msg.conv}</p>}
+              </div>
+            )}
+          </section>
+
           <section className="card" aria-labelledby="h-badges">
             <h2 id="h-badges">Platform badges</h2>
             <p className="muted small">GameVault ships with PS5 and PS4 logo badges. To use different images, put files named <code>ps5.svg</code> and <code>ps4.svg</code> (or .png / .webp) in <code>docker/gamevault/badges</code> on the NAS and reload the page.</p>
@@ -198,6 +244,7 @@ GET  /games/{id}/files/{path}   · Range`}</pre>
       </div>
 
       {fixing && <FixMatch game={fixing} onClose={() => setFixing(null)} onMatched={() => load()} />}
+      {tidy && <TidyNames onClose={() => setTidy(false)} onDone={() => setTimeout(load, 4000)} />}
     </main>
   );
 }

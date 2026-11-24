@@ -30,5 +30,9 @@ export const config = {
   igdbClientId: process.env.IGDB_CLIENT_ID || '',
   igdbClientSecret: process.env.IGDB_CLIENT_SECRET || '',
   webDir: path.resolve(here, '../web/dist'),
+  // Conversion service: incoming folders live here (PS5/, PS4/, _done/, _work/).
+  incomingDir: path.resolve(process.env.GV_INCOMING || '/games/_incoming'),
+  forgeBin: process.env.GV_FORGE_BIN || 'ps5-dump-forge',
+  forgeVersion: process.env.FORGE_VERSION || '',
   version: process.env.GV_VERSION || '0.1.0'
 };

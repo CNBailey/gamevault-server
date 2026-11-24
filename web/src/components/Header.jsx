@@ -1,7 +1,7 @@
 import { Icon, Logo } from './Icons.jsx';
 import { timeAgo } from '../api.js';
 
-export default function Header({ section, search, onSearch, showSearch, scan }) {
+export default function Header({ section, search, onSearch, showSearch, scan, conv }) {
   const s = scan.state;
   let status = '';
   if (s?.running) {
@@ -18,6 +18,11 @@ export default function Header({ section, search, onSearch, showSearch, scan }) 
         <a href="#/" className="brand"><Logo /><span>GameVault</span></a>
         <nav aria-label="Main" className="nav">
           <a href="#/" aria-current={section === 'library' ? 'page' : undefined}>Library</a>
+          {conv?.enabled && (
+            <a href="#/conversions" aria-current={section === 'conversions' ? 'page' : undefined}>
+              Conversions{conv.busy > 0 && <span className="nav-count" aria-label={`${conv.busy} in progress or waiting`}>{conv.busy}</span>}
+            </a>
+          )}
           <a href="#/settings" aria-current={section === 'settings' ? 'page' : undefined}>Settings</a>
         </nav>
         <div className="topbar-search">

@@ -11,6 +11,9 @@ permissions:
   contents: read
   packages: write
 
+env:
+  FORGE_VERSION: 0.5.7   # PS5 Dump Forge release bundled in the image
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -21,6 +24,11 @@ jobs:
           node-version: 24
           cache: npm
       - run: sudo apt-get update && sudo apt-get install -y exfatprogs
+      - name: Download PS5 Dump Forge
+        run: |
+          curl -fsSL -o /tmp/forge.tgz "https://github.com/quer3q/ps5-dump-forge/releases/download/v${FORGE_VERSION}/ps5-dump-forge-${FORGE_VERSION}-linux-x86-64.tar.gz"
+          mkdir /tmp/forge && tar -xzf /tmp/forge.tgz -C /tmp/forge
+          echo "GV_FORGE_BIN=$(find /tmp/forge -type f -name ps5-dump-forge | head -n1)" >> "$GITHUB_ENV"
       - run: npm ci
       - run: npm test
 
@@ -52,6 +60,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: GV_VERSION=${{ github.ref_name }}-${{ github.sha }}
+          build-args: |
+            GV_VERSION=${{ github.ref_name }}-${{ github.sha }}
+            FORGE_VERSION=${{ env.FORGE_VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
