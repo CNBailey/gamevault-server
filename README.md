@@ -22,7 +22,7 @@ GameVault's database and artwork live in `/data`. The `Games` share is mounted r
 3. In **Container Manager → Project → Create**: name it `gamevault`, choose the path `/volume1/docker/gamevault`, pick **Create docker-compose.yml**, and paste in [`docker-compose.yml`](docker-compose.yml). It mounts the whole `/volume1/Games` share, with libraries in `Games/PS5` and `Games/PS4`; change the paths if yours differ.
 4. Open `http://<nas-ip>:8686`, then go to **Settings → Metadata & media** and enter your IGDB client ID and secret (see below). Click **Scan & refresh all details**.
 
-To update: **Container Manager → Project → gamevault → Action → Build**. `pull_policy: always` in the compose file makes it download the newest image each time.
+**Updates** are automatic: the compose file includes a small updater ([nickfedor/watchtower](https://github.com/nicholas-fedor/watchtower), a maintained fork of Watchtower) that checks for a new GameVault image every night at 04:00 and restarts GameVault with it. It only touches containers labelled `com.centurylinklabs.watchtower.enable`. It needs access to the Docker socket to do this; delete the `updater` block if you would rather update by hand (**Project → gamevault → Action → Stop → Clean**, delete the image, then **Build**).
 
 ### Getting IGDB credentials (free)
 1. Sign in at <https://dev.twitch.tv/console> (a Twitch account is needed; turn on two-factor authentication if asked).

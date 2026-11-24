@@ -6,6 +6,8 @@ services:
     pull_policy: always                   # "Build" in Container Manager always fetches the newest version
     container_name: gamevault
     restart: unless-stopped
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"   # let the updater below update this container
     ports:
       - "8686:8686"                       # open http://<nas-ip>:8686
     environment:
@@ -24,3 +26,17 @@ services:
       # The whole Games share, so finished conversions move into the library instantly
       # (no copying). Needs write access for the conversion service and "Tidy file names".
       - /volume1/Games:/games
+
+  # Nightly auto-update: checks for a new GameVault image at 04:00 and restarts with it.
+  # Only touches containers labelled above. Remove this block to update by hand instead.
+  updater:
+    image: nickfedor/watchtower:latest
+    container_name: gamevault-updater
+    restart: unless-stopped
+    environment:
+      TZ: Europe/London
+      WATCHTOWER_SCHEDULE: "0 0 4 * * *"   # sec min hour day month weekday
+      WATCHTOWER_LABEL_ENABLE: "true"
+      WATCHTOWER_CLEANUP: "true"           # delete the old image after updating
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
