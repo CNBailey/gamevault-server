@@ -13,6 +13,24 @@ A self-hosted catalogue for PlayStation game dumps, served as a web page from yo
 - Optional **conversion service**: drop a PS5 game in a folder and it becomes a correctly named `.exfat` in your library; drop a PS4 `.pkg` and it is renamed from its own header and filed
 - One Docker container; runs on Synology, or any Linux box with Docker (amd64 and arm64)
 
+## Screenshots
+
+<sub>Made-up games with generated artwork, for illustration.</sub>
+
+**Library**: every PS5 and PS4 game on the NAS, with filters, categories, search and favourites.
+
+![Library page](docs/screenshots/library.webp)
+
+**Game page**: artwork, details and scores from IGDB, with file information below.
+
+![Game page](docs/screenshots/details.webp)
+
+| USB drive: copy games to a drive plugged into the NAS | Settings: libraries, scanning, IGDB and the conversion service |
+|---|---|
+| ![USB drive page](docs/screenshots/usb.webp) | ![Settings page](docs/screenshots/settings.webp) |
+
+The PS5 side, with its home-screen app, is [GameVault for PS5](https://github.com/CNBailey/gamevault-client).
+
 GameVault's database and artwork live in `/data`. The `Games` share is mounted read-write so the conversion service and **Tidy file names** can file games; nothing in your library is changed unless you use one of those.
 
 ## Install on a Synology
