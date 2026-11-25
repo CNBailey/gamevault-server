@@ -26,6 +26,12 @@ services:
       # The whole Games share, so finished conversions move into the library instantly
       # (no copying). Needs write access for the conversion service and "Tidy file names".
       - /volume1/Games:/games
+      # USB drives plugged into the NAS, for the "USB drive" tab (copy games to a drive
+      # for the PS5). Remove the # from these two lines, then Build the project again.
+      # "rslave" lets GameVault see a drive plugged in later. If Build fails with
+      # "not a shared or slave mount", delete ":rslave" (then plug the drive in first).
+      # - /volumeUSB1:/usb/1:rslave
+      # - /volumeUSB2:/usb/2:rslave
 
   # Nightly auto-update: checks for a new GameVault image at 04:00 and restarts with it.
   # Only touches containers labelled above. Remove this block to update by hand instead.

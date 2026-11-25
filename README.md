@@ -74,6 +74,20 @@ Switch it on in **Settings → Conversion service**. A **Conversions** tab then 
 
 PS5 Dump Forge is GPL-3.0; the image bundles its official Linux command-line release (version set in the workflow, `FORGE_VERSION`).
 
+## Copying games to a USB drive
+
+The **USB drive** tab copies games from the library to a USB drive plugged into the NAS, ready to plug into the PS5:
+
+- **PS5 games** go in `homebrew/` on the drive (created if it's missing), where ShadowMountPlus finds them: `.exfat` images as they are, folder dumps as a folder.
+- **PS4 games** go in the drive's top folder: the base game `.pkg`, then its patches and add-ons, ready for the console's package installer.
+- PS4 folder dumps can't be installed from a USB drive and are refused (make a `.pkg` of them first).
+
+It lists each drive with its format and free space, marks games that are already on the selected drive, and refuses a selection that doesn't fit. Files are written as `name.gvpart` and renamed when complete, so an interrupted copy never looks finished; copying again skips files already there at full size.
+
+GameVault never formats a drive. The PS5 reads games from **exFAT** drives, so GameVault copies only to drives that are exFAT (or whose format DSM hides behind FUSE, with a warning). To format one, in DSM open **Control Panel → External Devices**, select the drive, choose **Format** and pick **exFAT**. Formatting erases the drive. Eject the drive in DSM before unplugging it.
+
+To turn it on, remove the `#` from the two `/volumeUSB` lines in `docker-compose.yml` and **Build** the project again. DSM mounts USB drives at `/volumeUSB1/usbshare`, `/volumeUSB2/usbshare` and so on. The `:rslave` option lets GameVault see a drive plugged in after it started. If Build fails with *not a shared or slave mount*, delete `:rslave` and plug the drive in before starting GameVault.
+
 ## API
 
 Base URL: `http://<nas-ip>:8686/api/v1`. All responses are JSON unless noted.
@@ -115,6 +129,7 @@ PS5 and PS4 logo badges are built in (`server/assets/badges`; white, 64 px high,
 | `GV_SCAN_INTERVAL_HOURS` | `6` | `0` turns automatic scans off |
 | `GV_INCOMING` | `/games/_incoming` | Conversion service folders (`PS5/`, `PS4/`, `_done/`, `_work/`) |
 | `GV_FORGE_BIN` | `ps5-dump-forge` | Path of the PS5 Dump Forge CLI (bundled in the image) |
+| `GV_USB_ROOT` | `/usb` | Where USB drives appear inside the container |
 | `IGDB_CLIENT_ID` / `IGDB_CLIENT_SECRET` | — | Optional; can be set in Settings instead |
 
 ## Development

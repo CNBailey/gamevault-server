@@ -8,6 +8,7 @@ import { runScan, scheduleScans, syncEnvLibraries } from './jobs.js';
 import { badgesDir, defaultBadgesDir, mediaRoot } from './media.js';
 import api from './routes/api.js';
 import convertApi from './routes/convert.js';
+import usbApi from './routes/usb.js';
 import { startConversionService, stopConversionService } from './convert/service.js';
 import { startClientReleases } from './clientRelease.js';
 
@@ -27,6 +28,7 @@ app.addHook('onRequest', async (req, reply) => {
 
 await app.register(api, { prefix: '/api/v1' });
 await app.register(convertApi, { prefix: '/api/v1' });
+await app.register(usbApi, { prefix: '/api/v1' });
 
 await app.register(fastifyStatic, {
   root: mediaRoot,

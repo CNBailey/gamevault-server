@@ -4,6 +4,7 @@ import Library from './pages/Library.jsx';
 import Details from './pages/Details.jsx';
 import Settings from './pages/Settings.jsx';
 import Conversions from './pages/Conversions.jsx';
+import Usb from './pages/Usb.jsx';
 import { api } from './api.js';
 import { useScan } from './hooks.js';
 
@@ -43,6 +44,9 @@ export default function App() {
   } else if (route.startsWith('/settings')) {
     section = 'settings';
     page = <Settings scan={scan} onConversionChange={refreshConv} />;
+  } else if (route.startsWith('/usb')) {
+    section = 'usb';
+    page = <Usb />;
   } else if (route.startsWith('/conversions')) {
     section = 'conversions';
     page = <Conversions onChange={refreshConv} />;

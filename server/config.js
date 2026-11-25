@@ -32,6 +32,8 @@ export const config = {
   webDir: path.resolve(here, '../web/dist'),
   // Conversion service: incoming folders live here (PS5/, PS4/, _done/, _work/).
   incomingDir: path.resolve(process.env.GV_INCOMING || '/games/_incoming'),
+  // USB drives plugged into the NAS appear under here (docker-compose maps /volumeUSB1 ...).
+  usbRoot: path.resolve(process.env.GV_USB_ROOT || '/usb'),
   forgeBin: process.env.GV_FORGE_BIN || 'ps5-dump-forge',
   forgeVersion: process.env.FORGE_VERSION || '',
   version: process.env.GV_VERSION || '0.1.0'

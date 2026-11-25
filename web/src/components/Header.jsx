@@ -23,6 +23,7 @@ export default function Header({ section, search, onSearch, showSearch, scan, co
               Conversions{conv.busy > 0 && <span className="nav-count" aria-label={`${conv.busy} in progress or waiting`}>{conv.busy}</span>}
             </a>
           )}
+          <a href="#/usb" aria-current={section === 'usb' ? 'page' : undefined}>USB drive</a>
           <a href="#/settings" aria-current={section === 'settings' ? 'page' : undefined}>Settings</a>
         </nav>
         <div className="topbar-search">

@@ -37,6 +37,11 @@ export const api = {
   removeConversion: (id) => request(`${base}/conversions/${id}`, { method: 'DELETE' }),
   clearConversionHistory: () => request(`${base}/conversions/clear-history`, { method: 'POST' }),
   emptyDone: () => request(`${base}/conversions/empty-done`, { method: 'POST', body: { confirm: true } }),
+  usb: (drive) => request(`${base}/usb${drive ? `?drive=${encodeURIComponent(drive)}` : ''}`),
+  usbCopy: (drive, gameIds) => request(`${base}/usb/copy`, { method: 'POST', body: { drive, gameIds } }),
+  usbCancel: (id) => request(`${base}/usb/jobs/${id}/cancel`, { method: 'POST' }),
+  usbRemove: (id) => request(`${base}/usb/jobs/${id}`, { method: 'DELETE' }),
+  usbClear: () => request(`${base}/usb/jobs/clear`, { method: 'POST' }),
   renamePreview: (platform) => request(`${base}/maintenance/rename-preview?platform=${platform}`),
   applyRenames: (platform, paths) => request(`${base}/maintenance/rename`, { method: 'POST', body: { platform, paths } })
 };
