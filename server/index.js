@@ -5,7 +5,7 @@ import fastifyStatic from '@fastify/static';
 import { config } from './config.js';
 import { db } from './db.js';
 import { runScan, scheduleScans, syncEnvLibraries } from './jobs.js';
-import { badgesDir, defaultBadgesDir, mediaRoot } from './media.js';
+import { badgesDir, mediaRoot } from './media.js';
 import api from './routes/api.js';
 import convertApi from './routes/convert.js';
 import usbApi from './routes/usb.js';
@@ -35,13 +35,6 @@ await app.register(fastifyStatic, {
   prefix: '/media/',
   decorateReply: false,
   maxAge: '30d'
-});
-
-await app.register(fastifyStatic, {
-  root: defaultBadgesDir,
-  prefix: '/badges/default/',
-  decorateReply: false,
-  maxAge: '7d'
 });
 
 await app.register(fastifyStatic, {

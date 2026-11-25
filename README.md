@@ -117,7 +117,7 @@ Base URL: `http://<nas-ip>:8686/api/v1`. All responses are JSON unless noted.
 
 ## Platform badges
 
-PS5 and PS4 logo badges are built in (`server/assets/badges`; white, 64 px high, shown at 14–20 px). To use different images, put `ps5.svg` and `ps4.svg` (or `.png` / `.webp`) in `/data/badges` (on a Synology with the compose file above: `docker/gamevault/badges`) and reload the page.
+Games show a **PS5** or **PS4** text badge. To show images instead, put `ps5.png` and `ps4.png` (or `.svg` / `.webp`) in `/data/badges`: on a Synology with the compose file above, that's the `docker/gamevault/badges` folder. Reload the page to see them. Images look best white, about 64 px high (they're shown at 14–20 px). GameVault doesn't include any logos.
 
 ## Configuration
 

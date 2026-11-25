@@ -244,7 +244,7 @@ export default function Settings({ scan, onConversionChange }) {
 
           <section className="card" aria-labelledby="h-badges">
             <h2 id="h-badges">Platform badges</h2>
-            <p className="muted small">GameVault ships with PS5 and PS4 logo badges. To use different images, put files named <code>ps5.svg</code> and <code>ps4.svg</code> (or .png / .webp) in <code>docker/gamevault/badges</code> on the NAS and reload the page.</p>
+            <p className="muted small">Games show a PS5 or PS4 text badge. To show images instead, put files named <code>ps5.png</code> and <code>ps4.png</code> (or .svg / .webp) in <code>docker/gamevault/badges</code> on the NAS and reload the page. GameVault doesn’t include any logos.</p>
           </section>
 
           <section className="card" aria-labelledby="h-api">
